@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luminous — Learn Smarter</title>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e; --surface3: #282828;
+  --white: #ffffff; --gray1: #e0e0e0; --gray2: #a0a0a0; --gray3: #666;
+  --accent: #a8e6a3; --accent2: #7dd87a; --accent-dim: rgba(168,230,163,0.12);
+  --radius: 16px; --radius-sm: 10px;
+}
+body { font-family: 'League Spartan', sans-serif; background: var(--bg); color: var(--white); min-height: 100vh; overflow-x: hidden; }
+button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+.app { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; padding-bottom: 100px; }
+
+/* Hexagon */
+#hex-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+#hex-canvas { width: 100%; height: 100%; }
+
+/* Nav */
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: rgba(20,20,20,0.92); backdrop-filter: blur(20px); border-top: 1px solid #222; display: flex; z-index: 100; padding: 8px 0 env(safe-area-inset-bottom, 8px); }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; background: none; color: var(--gray3); transition: color 0.2s; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn svg { width: 24px; height: 24px; }
+.nav-btn.active svg { filter: drop-shadow(0 0 6px rgba(168,230,163,0.4)); }
+
+/* Header */
+.header { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: rgba(10,10,10,0.9); backdrop-filter: blur(16px); z-index: 50; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-left img { width: 32px; height: 32px; border-radius: 8px; }
+.header-title { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+.header-right { display: flex; align-items: center; gap: 14px; }
+.streak-badge { display: flex; align-items: center; gap: 5px; background: var(--surface2); padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 14px; color: #ff9500; }
+.streak-badge svg { width: 18px; height: 18px; }
+
+/* Pages */
+.page { display: none; position: relative; z-index: 1; }
+.page.active { display: block; animation: fadeUp 0.35s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Home */
+.daily-progress { margin: 16px 20px; background: var(--surface); border-radius: var(--radius); padding: 20px; }
+.daily-label { font-size: 13px; color: var(--gray2); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.daily-bar-track { height: 8px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
+.daily-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+.daily-count { font-size: 28px; font-weight: 900; margin: 10px 0 4px; }
+.daily-count span { color: var(--gray3); font-size: 18px; }
+
+/* Rank card */
+.rank-card { margin: 0 20px 16px; background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%); border-radius: var(--radius); padding: 20px; border: 1px solid #222; position: relative; overflow: hidden; }
+.rank-card::after { content: ''; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(168,230,163,0.08) 0%, transparent 70%); }
+.rank-label { font-size: 12px; color: var(--gray2); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+.rank-name { font-size: 32px; font-weight: 900; margin: 4px 0; }
+.rank-xp { font-size: 14px; color: var(--gray2); font-weight: 500; }
+.rank-xp b { color: var(--accent); }
+.rank-bar-track { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-top: 12px; }
+.rank-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #5dd85a); border-radius: 3px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+
+/* Course cards */
+.section-title { font-size: 13px; color: var(--gray2); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; padding: 20px 20px 12px; }
+.course-card { margin: 0 20px 12px; background: var(--surface); border-radius: var(--radius); padding: 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: transform 0.2s, background 0.2s; border: 1px solid transparent; }
+.course-card:hover { transform: translateY(-2px); background: var(--surface2); border-color: #333; }
+.course-card:active { transform: scale(0.98); }
+.course-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+.course-icon.ps { background: linear-gradient(135deg, #2a2a2a, #1a1a1a); border: 1px solid #333; }
+.course-icon.sm { background: linear-gradient(135deg, #2a2a2a, #1a1a1a); border: 1px solid #333; }
+.course-info { flex: 1; }
+.course-name { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+.course-desc { font-size: 13px; color: var(--gray2); font-weight: 500; line-height: 1.3; }
+.course-progress { margin-top: 10px; }
+.course-prog-text { font-size: 11px; color: var(--gray3); font-weight: 600; margin-bottom: 4px; }
+.course-prog-track { height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+.course-prog-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.5s; }
+.course-arrow { color: var(--gray3); flex-shrink: 0; }
+
+/* Level map */
+.level-map { padding: 20px; }
+.level-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.back-btn { width: 40px; height: 40px; border-radius: 12px; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: var(--white); transition: background 0.2s; }
+.back-btn:hover { background: var(--surface3); }
+.level-header-info h2 { font-size: 22px; font-weight: 900; }
+.level-header-info p { font-size: 13px; color: var(--gray2); font-weight: 500; }
+.levels-list { display: flex; flex-direction: column; gap: 8px; }
+.level-item { display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--surface); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+.level-item:hover:not(.locked) { background: var(--surface2); border-color: #333; transform: translateX(4px); }
+.level-item.locked { opacity: 0.4; cursor: not-allowed; }
+.level-item.completed { border-color: rgba(168,230,163,0.2); }
+.level-num { width: 40px; height: 40px; border-radius: 10px; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; flex-shrink: 0; }
+.level-item.completed .level-num { background: var(--accent); color: #0a0a0a; }
+.level-item.current .level-num { background: var(--white); color: #0a0a0a; box-shadow: 0 0 0 3px rgba(255,255,255,0.2); }
+.level-info { flex: 1; }
+.level-name { font-size: 15px; font-weight: 700; }
+.level-diff { font-size: 12px; color: var(--gray3); font-weight: 500; margin-top: 2px; }
+.level-status { font-size: 20px; flex-shrink: 0; }
+
+/* Lesson view */
+.lesson-view { padding: 20px; }
+.lesson-question { font-size: 20px; font-weight: 800; line-height: 1.4; margin: 20px 0; }
+.lesson-scenario { background: var(--surface); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; border-left: 3px solid var(--accent); }
+.lesson-scenario p { font-size: 14px; color: var(--gray1); line-height: 1.7; font-weight: 500; }
+.lesson-hint { font-size: 13px; color: var(--gray2); font-style: italic; margin-bottom: 20px; line-height: 1.5; }
+.options { display: flex; flex-direction: column; gap: 10px; }
+.option-btn { padding: 16px 20px; background: var(--surface); border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; color: var(--white); text-align: left; transition: all 0.2s; border: 2px solid #222; line-height: 1.4; }
+.option-btn:hover { border-color: #444; background: var(--surface2); transform: translateY(-1px); }
+.option-btn.selected { border-color: var(--accent); background: var(--accent-dim); }
+.option-btn.correct { border-color: var(--accent); background: rgba(168,230,163,0.15); color: var(--accent); }
+.option-btn.wrong { border-color: #ff4444; background: rgba(255,68,68,0.1); color: #ff6666; }
+.option-btn:disabled { cursor: default; transform: none; }
+.submit-btn { width: 100%; padding: 16px; border-radius: var(--radius-sm); font-size: 16px; font-weight: 800; margin-top: 20px; transition: all 0.25s; text-transform: uppercase; letter-spacing: 1px; }
+.submit-btn.check { background: var(--white); color: #0a0a0a; }
+.submit-btn.check:hover { background: #e0e0e0; transform: translateY(-1px); }
+.submit-btn.check:disabled { background: var(--surface3); color: var(--gray3); cursor: not-allowed; transform: none; }
+.submit-btn.next { background: var(--accent); color: #0a0a0a; }
+.submit-btn.next:hover { background: var(--accent2); }
+.feedback { margin-top: 16px; padding: 16px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; line-height: 1.5; animation: fadeUp 0.3s ease; }
+.feedback.correct { background: rgba(168,230,163,0.1); border: 1px solid rgba(168,230,163,0.3); color: var(--accent); }
+.feedback.wrong { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.2); color: #ff6666; }
+.lesson-progress { display: flex; gap: 4px; margin-bottom: 12px; }
+.lesson-prog-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--surface3); }
+.lesson-prog-dot.done { background: var(--accent); }
+.lesson-prog-dot.active { background: var(--white); }
+
+/* Daily limit modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal { background: var(--surface); border-radius: 20px; padding: 32px 24px; max-width: 360px; width: 100%; text-align: center; animation: modalUp 0.3s ease; }
+@keyframes modalUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.modal h3 { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
+.modal p { font-size: 14px; color: var(--gray2); margin-bottom: 24px; line-height: 1.5; }
+.modal-btn { padding: 14px 32px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; background: var(--white); color: #0a0a0a; transition: all 0.2s; }
+.modal-btn:hover { background: #ddd; }
+
+/* Settings */
+.settings-page { padding: 20px; }
+.settings-page h2 { font-size: 26px; font-weight: 900; margin-bottom: 24px; }
+.setting-group { margin-bottom: 24px; }
+.setting-group-title { font-size: 12px; color: var(--gray3); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+.setting-item { background: var(--surface); border-radius: var(--radius-sm); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.setting-item span { font-size: 15px; font-weight: 600; }
+.setting-item .val { color: var(--gray2); font-size: 14px; }
+.reset-btn { width: 100%; padding: 16px; border-radius: var(--radius-sm); background: #1a1a1a; border: 1px solid #333; color: #ff4444; font-size: 15px; font-weight: 700; transition: all 0.2s; }
+.reset-btn:hover { background: rgba(255,68,68,0.1); border-color: #ff4444; }
+
+/* Leaderboard / Rank page */
+.rank-page { padding: 20px; }
+.rank-page h2 { font-size: 26px; font-weight: 900; margin-bottom: 4px; }
+.rank-page .sub { font-size: 14px; color: var(--gray2); margin-bottom: 24px; }
+.big-rank { text-align: center; padding: 40px 20px; background: var(--surface); border-radius: var(--radius); margin-bottom: 24px; border: 1px solid #222; }
+.big-rank-icon { font-size: 64px; margin-bottom: 12px; }
+.big-rank-name { font-size: 36px; font-weight: 900; }
+.big-rank-xp { font-size: 16px; color: var(--gray2); margin-top: 6px; }
+.big-rank-xp b { color: var(--accent); }
+.ranks-ladder { display: flex; flex-direction: column; gap: 6px; }
+.rank-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid transparent; }
+.rank-row.current { border-color: var(--accent); background: var(--accent-dim); }
+.rank-row-icon { font-size: 28px; width: 40px; text-align: center; }
+.rank-row-info { flex: 1; }
+.rank-row-name { font-weight: 700; font-size: 15px; }
+.rank-row-req { font-size: 12px; color: var(--gray3); }
+
+/* Stats badges */
+.stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 16px 20px; }
+.stat-card { background: var(--surface); border-radius: var(--radius-sm); padding: 16px 12px; text-align: center; }
+.stat-val { font-size: 26px; font-weight: 900; }
+.stat-label { font-size: 11px; color: var(--gray3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+/* Completion anim */
+.xp-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 300; pointer-events: none; }
+.xp-popup span { display: block; font-size: 48px; font-weight: 900; color: var(--accent); text-shadow: 0 0 30px rgba(168,230,163,0.5); animation: xpAnim 1.5s ease forwards; }
+@keyframes xpAnim { 0% { opacity: 0; transform: scale(0.5) translateY(20px); } 30% { opacity: 1; transform: scale(1.1) translateY(-10px); } 100% { opacity: 0; transform: scale(0.8) translateY(-60px); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<canvas id="hex-canvas"></canvas>
+
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <img src="https://i.imgur.com/EI159zW.png" alt="Luminous">
+      <span class="header-title">Luminous</span>
+    </div>
+    <div class="header-right">
+      <div class="streak-badge">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span id="streak-count">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+    <div class="daily-progress">
+      <div class="daily-label">Today's Lessons</div>
+      <div class="daily-count"><span id="daily-done">0</span> <span>/ 2</span></div>
+      <div class="daily-bar-track"><div class="daily-bar-fill" id="daily-bar" style="width:0%"></div></div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="stat-xp">0</div><div class="stat-label">Total XP</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-lessons">0</div><div class="stat-label">Lessons</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-accuracy">0%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+
+    <div class="rank-card">
+      <div class="rank-label">Current Rank</div>
+      <div class="rank-name" id="rank-name">Beginner</div>
+      <div class="rank-xp"><b id="rank-xp-current">0</b> / <span id="rank-xp-next">50</span> XP to next rank</div>
+      <div class="rank-bar-track"><div class="rank-bar-fill" id="rank-bar" style="width:0%"></div></div>
+    </div>
+
+    <div class="section-title">Your Courses</div>
+    <div class="course-card" onclick="openCourse(0)">
+      <div class="course-icon ps">🧩</div>
+      <div class="course-info">
+        <div class="course-name">Problem Solving</div>
+        <div class="course-desc">Master logical thinking, pattern recognition & creative solutions</div>
+        <div class="course-progress">
+          <div class="course-prog-text" id="ps-prog-text">0 / 15 levels</div>
+          <div class="course-prog-track"><div class="course-prog-fill" id="ps-prog-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="course-arrow">›</div>
+    </div>
+    <div class="course-card" onclick="openCourse(1)">
+      <div class="course-icon sm">♟️</div>
+      <div class="course-info">
+        <div class="course-name">Strategy Making</div>
+        <div class="course-desc">Build decision frameworks, risk assessment & long-term planning</div>
+        <div class="course-progress">
+          <div class="course-prog-text" id="sm-prog-text">0 / 15 levels</div>
+          <div class="course-prog-track"><div class="course-prog-fill" id="sm-prog-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="course-arrow">›</div>
+    </div>
+  </div>
+
+  <!-- COURSE / LEVELS PAGE -->
+  <div class="page" id="page-course">
+    <div class="level-map">
+      <div class="level-header">
+        <button class="back-btn" onclick="showPage('home')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="level-header-info">
+          <h2 id="course-title"></h2>
+          <p id="course-subtitle"></p>
+        </div>
+      </div>
+      <div class="levels-list" id="levels-list"></div>
+    </div>
+  </div>
+
+  <!-- LESSON PAGE -->
+  <div class="page" id="page-lesson">
+    <div class="lesson-view">
+      <div class="level-header" style="margin-bottom:16px">
+        <button class="back-btn" id="lesson-back-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="level-header-info">
+          <h2 id="lesson-title" style="font-size:18px"></h2>
+          <p id="lesson-sub"></p>
+        </div>
+      </div>
+      <div class="lesson-progress" id="lesson-progress"></div>
+      <div id="lesson-content"></div>
+    </div>
+  </div>
+
+  <!-- RANK PAGE -->
+  <div class="page" id="page-rank">
+    <div class="rank-page">
+      <h2>Your Rank</h2>
+      <p class="sub">Complete lessons to climb the ranks</p>
+      <div class="big-rank">
+        <div class="big-rank-icon" id="big-rank-icon">🌱</div>
+        <div class="big-rank-name" id="big-rank-name">Beginner</div>
+        <div class="big-rank-xp"><b id="big-rank-xp">0</b> XP earned total</div>
+      </div>
+      <div class="section-title" style="padding-left:0">All Ranks</div>
+      <div class="ranks-ladder" id="ranks-ladder"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PAGE -->
+  <div class="page" id="page-settings">
+    <div class="settings-page">
+      <h2>Settings</h2>
+      <div class="setting-group">
+        <div class="setting-group-title">Progress</div>
+        <div class="setting-item"><span>Total XP</span><span class="val" id="set-xp">0</span></div>
+        <div class="setting-item"><span>Lessons Done</span><span class="val" id="set-lessons">0</span></div>
+        <div class="setting-item"><span>Current Streak</span><span class="val" id="set-streak">0 days</span></div>
+        <div class="setting-item"><span>Best Streak</span><span class="val" id="set-best-streak">0 days</span></div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-group-title">Danger Zone</div>
+        <button class="reset-btn" onclick="resetProgress()">Reset All Progress</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('home')" data-page="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    HOME
+  </button>
+  <button class="nav-btn" onclick="showPage('rank')" data-page="rank">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    RANK
+  </button>
+  <button class="nav-btn" onclick="showPage('settings')" data-page="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    SETTINGS
+  </button>
+</nav>
+
+<!-- Modal container -->
+<div id="modal-container"></div>
+<!-- XP popup -->
+<div class="xp-popup" id="xp-popup"></div>
+
+<script>
+// ========== RANKS ==========
+const RANKS = [
+  { name: 'Beginner', icon: '🌱', xp: 0 },
+  { name: 'Thinker', icon: '💭', xp: 50 },
+  { name: 'Analyst', icon: '🔍', xp: 150 },
+  { name: 'Strategist', icon: '🎯', xp: 350 },
+  { name: 'Tactician', icon: '⚡', xp: 600 },
+  { name: 'Architect', icon: '🏗️', xp: 1000 },
+  { name: 'Visionary', icon: '👁️', xp: 1500 },
+  { name: 'Mastermind', icon: '🧠', xp: 2200 },
+  { name: 'Luminary', icon: '✨', xp: 3000 },
+  { name: 'Transcendent', icon: '🌟', xp: 4000 },
+];
+
+// ========== COURSE DATA ==========
+const COURSES = [
+  {
+    id: 'problem-solving',
+    name: 'Problem Solving',
+    icon: '🧩',
+    desc: 'Master logical thinking, pattern recognition & creative solutions',
+    levels: [
+      {
+        name: 'Breaking Down Problems',
+        difficulty: 'Beginner',
+        xp: 15,
+        questions: [
+          {
+            scenario: "You're moving to a new city next month. The task feels overwhelming — finding a place, packing, transferring utilities, changing your address, saying goodbye to friends, and more.",
+            question: "What's the BEST first step when facing a complex, overwhelming problem?",
+            hint: "Think about what makes big problems feel manageable.",
+            options: [
+              "Try to do everything at once to save time",
+              "Break it into smaller, independent sub-tasks and prioritize them",
+              "Ignore the problem until it becomes urgent",
+              "Ask someone else to handle it entirely"
+            ],
+            correct: 1,
+            explanation: "Decomposition is the foundation of problem-solving. Breaking a large problem into smaller, manageable pieces lets you focus on one thing at a time, reduces anxiety, and helps you see dependencies between tasks."
+          },
+          {
+            scenario: "A friend asks: 'I keep failing my math tests even though I study for hours.' You want to help them identify the real issue.",
+            question: "What question would best help identify the ROOT cause?",
+            hint: "Surface-level symptoms often mask deeper issues.",
+            options: [
+              "Have you tried studying even more hours?",
+              "What specifically do you do during your study sessions, and where exactly do you lose points on tests?",
+              "Maybe math just isn't for you.",
+              "Just use a calculator next time."
+            ],
+            correct: 1,
+            explanation: "Root cause analysis means asking 'why' and 'where specifically' rather than accepting surface explanations. The study method and specific failure points reveal the actual problem — maybe they re-read notes but never practice problems."
+          },
+          {
+            scenario: "You're debugging code that doesn't work. It has 200 lines across 5 functions. The output is wrong but there's no error message.",
+            question: "What's the most systematic debugging approach?",
+            hint: "Binary search isn't just for sorted arrays.",
+            options: [
+              "Rewrite the entire program from scratch",
+              "Stare at the code until you spot the bug",
+              "Test each function independently with known inputs to isolate which one produces wrong output",
+              "Add random changes and see if it fixes itself"
+            ],
+            correct: 2,
+            explanation: "Isolating components and testing them independently is systematic debugging. This is essentially binary search applied to problem-solving — you eliminate half the problem space with each test. This principle applies to ANY complex system, not just code."
+          }
+        ]
+      },
+      {
+        name: 'Pattern Recognition',
+        difficulty: 'Beginner',
+        xp: 15,
+        questions: [
+          {
+            scenario: "You notice that every time your team has a Monday morning meeting, productivity drops for the rest of the day. This has happened 6 weeks in a row.",
+            question: "What type of thinking does recognizing this pattern represent?",
+            hint: "Patterns emerge from repeated observations over time.",
+            options: [
+              "Coincidence — 6 weeks means nothing",
+              "Inductive reasoning — using specific observations to form a general conclusion",
+              "Overthinking — meetings don't affect productivity",
+              "Guessing randomly"
+            ],
+            correct: 1,
+            explanation: "Inductive reasoning moves from specific observations to general conclusions. Recognizing patterns is a superpower: it lets you predict outcomes, identify problems early, and make better decisions. 6 consistent data points is a strong signal worth investigating."
+          },
+          {
+            scenario: "Study these number sequences and find the pattern: 2, 6, 18, 54, ?",
+            question: "What comes next?",
+            hint: "Look at the relationship between consecutive numbers.",
+            options: [
+              "108",
+              "162",
+              "72",
+              "216"
+            ],
+            correct: 1,
+            explanation: "Each number is multiplied by 3 (geometric sequence with ratio 3). 54 × 3 = 162. Pattern recognition in sequences trains your brain to look for underlying rules — the same skill helps you spot trends in business, behavior, or any system."
+          },
+          {
+            scenario: "You're a store manager. Sales spike every year in March, July, and November. Each spike is about 40% above average. It's now February.",
+            question: "How should you use this pattern?",
+            hint: "Patterns become powerful when you act on predictions.",
+            options: [
+              "Ignore it — past data doesn't predict the future",
+              "Wait until the spike happens, then react",
+              "Proactively increase inventory and staffing for March based on the consistent historical pattern",
+              "Permanently increase inventory year-round"
+            ],
+            correct: 2,
+            explanation: "Acting proactively on reliable patterns is smart strategy. Three years of consistent 40% spikes in the same months is a strong pattern. Proactive preparation beats reactive scrambling every time. This is the essence of data-driven decision making."
+          }
+        ]
+      },
+      {
+        name: 'Working Backwards',
+        difficulty: 'Beginner',
+        xp: 20,
+        questions: [
+          {
+            scenario: "You need to arrive at an important interview at 9:00 AM. The commute takes 45 minutes, getting ready takes 1 hour, and you want 30 minutes buffer.",
+            question: "What time should your alarm go off?",
+            hint: "Start from the goal and work backwards through each step.",
+            options: [
+              "7:00 AM",
+              "6:45 AM",
+              "7:30 AM",
+              "6:15 AM"
+            ],
+            correct: 1,
+            explanation: "Working backwards: 9:00 AM → minus 45 min commute = 8:15 AM leave → minus 1 hour prep = 7:15 AM start → minus 30 min buffer = 6:45 AM alarm. Reverse engineering from your goal is one of the most powerful planning techniques in existence."
+          },
+          {
+            scenario: "A detective finds a locked room with a broken vase, wet floor, and an open window. The owner says nothing was disturbed when they left at 8 AM. It's now 2 PM.",
+            question: "How would 'working backwards' help solve this?",
+            hint: "What's the end state? What must have preceded it?",
+            options: [
+              "Guess who did it based on intuition",
+              "Reconstruct the sequence: current state → what caused each element → what must have happened first → who had access",
+              "Blame the first suspect you find",
+              "Ignore the clues and ask neighbors"
+            ],
+            correct: 1,
+            explanation: "Working backwards from evidence is core detective methodology. Wet floor + open window suggests rain came in. Broken vase near window suggests wind knocked it. You reconstruct the causal chain from effects to causes. This applies to debugging, diagnosis, and any mystery."
+          },
+          {
+            scenario: "You want to run a marathon (42km) in 6 months. Currently, you can barely run 2km without stopping.",
+            question: "Apply working-backwards thinking to create a plan:",
+            hint: "Define the end goal, then figure out what milestones must come before it.",
+            options: [
+              "Just run 42km tomorrow and see what happens",
+              "Month 6: Marathon → Month 5: 35km → Month 4: 25km → Month 3: 15km → Month 2: 8km → Month 1: 5km — build progressively",
+              "Only train the week before the marathon",
+              "Buy expensive running shoes and hope for the best"
+            ],
+            correct: 1,
+            explanation: "Working backwards from the goal creates natural milestones. Each milestone tells you exactly where you need to be and by when. This transforms an overwhelming goal into a series of achievable steps. Every great achievement is reverse-engineered this way."
+          }
+        ]
+      },
+      {
+        name: 'First Principles Thinking',
+        difficulty: 'Intermediate',
+        xp: 25,
+        questions: [
+          {
+            scenario: "Everyone says 'you need a college degree to succeed.' You're trying to decide whether to attend university or pursue an alternative path.",
+            question: "How would first principles thinking approach this?",
+            hint: "Strip away assumptions. What's fundamentally true?",
+            options: [
+              "Follow what everyone else does — they can't all be wrong",
+              "Break it down: What skills do I actually need? What's the real cost/benefit? Are there other ways to acquire those skills and credentials?",
+              "Skip education entirely since some billionaires dropped out",
+              "Choose the most expensive university for prestige"
+            ],
+            correct: 1,
+            explanation: "First principles thinking means questioning every assumption and rebuilding from fundamental truths. Instead of 'everyone gets a degree,' ask: What do employers actually want? (Skills, proof of ability, network). Can I get those differently? This is how Elon Musk rethought rocket costs."
+          },
+          {
+            scenario: "You want to eat healthily but 'healthy food is too expensive.' This belief stops many people from even trying.",
+            question: "Apply first principles to challenge this belief:",
+            hint: "What are the actual base components and their real costs?",
+            options: [
+              "Accept it and eat junk food",
+              "Only buy organic premium products",
+              "Analyze: rice, beans, eggs, seasonal vegetables, oats are extremely cheap. 'Healthy = expensive' comes from marketing premium products. Base nutrition is affordable.",
+              "Starve to save money"
+            ],
+            correct: 2,
+            explanation: "First principles reveals that basic nutritious foods (rice, beans, eggs, vegetables, oats) are among the cheapest foods available. The 'healthy = expensive' belief comes from associating health with premium branded products. Stripping to fundamentals shatters expensive myths."
+          },
+          {
+            scenario: "Your company's customer support has 2-day response times. The standard approach is 'hire more agents.' Budget is limited.",
+            question: "What first-principles question reveals the best solution?",
+            hint: "Don't just ask 'how to do this faster' — ask 'why does this exist?'",
+            options: [
+              "How many more agents can we afford?",
+              "What are the top 10 reasons customers contact us, and how many could be prevented or self-served?",
+              "Can we make agents type faster?",
+              "Should we just not respond to customers?"
+            ],
+            correct: 1,
+            explanation: "Instead of optimizing the existing system (more agents), question why tickets exist at all. Often 60%+ of support tickets are about the same few issues that could be fixed in the product or answered with better documentation. Eliminate the problem, don't just manage it faster."
+          }
+        ]
+      },
+      {
+        name: 'Constraint-Based Thinking',
+        difficulty: 'Intermediate',
+        xp: 25,
+        questions: [
+          {
+            scenario: "You have exactly $100 and 48 hours to plan a friend's surprise birthday party for 15 people.",
+            question: "How do constraints HELP your problem-solving?",
+            hint: "Constraints aren't just limitations — they're creative fuel.",
+            options: [
+              "They don't help — constraints only make things harder",
+              "Constraints force creativity by eliminating infinite options, making you focus on what truly matters and find innovative solutions",
+              "Just ignore the constraints and overspend",
+              "Cancel the party since the budget is too low"
+            ],
+            correct: 1,
+            explanation: "Paradoxically, constraints boost creativity. With unlimited resources, you'd be paralyzed by choice. With $100 and 48 hours, you immediately focus: potluck (free food), home venue (free), DIY decorations, creative activities over expensive ones. Some of the best solutions come from tight constraints."
+          },
+          {
+            scenario: "You're designing an app but your team only has ONE developer and TWO weeks until launch.",
+            question: "What's the smartest constraint-based approach?",
+            hint: "You can't do everything. What's the minimum that delivers maximum value?",
+            options: [
+              "Build every feature you can think of",
+              "Identify the single core feature that solves the main problem, build that excellently, and cut everything else for v1",
+              "Delay the launch indefinitely",
+              "Hire 5 more developers immediately"
+            ],
+            correct: 1,
+            explanation: "This is MVP (Minimum Viable Product) thinking. Constraints force you to find the essence of your product. Twitter started with just 140-character posts. Instagram started with just photo filters. The constraint of limited resources reveals what truly matters."
+          },
+          {
+            scenario: "A hospital ER is overwhelmed. Wait times are 6 hours. They can't build a bigger ER or hire more doctors quickly.",
+            question: "What constraint-based solution could dramatically help?",
+            hint: "If you can't expand the bottleneck, reduce what flows through it.",
+            options: [
+              "Tell patients to come back tomorrow",
+              "Make doctors work 20-hour shifts",
+              "Create a fast triage + treatment system: nurse practitioners handle the 70% of cases that aren't true emergencies in a separate fast-track area",
+              "Remove chairs so people don't wait"
+            ],
+            correct: 2,
+            explanation: "When you can't change the constraint (limited doctors/space), redirect the flow. Most ER visits aren't true emergencies. A fast-track system for minor issues dramatically reduces the load on the main ER. This is the Theory of Constraints applied to healthcare."
+          }
+        ]
+      },
+      {
+        name: 'Analogical Reasoning',
+        difficulty: 'Intermediate',
+        xp: 30,
+        questions: [
+          {
+            scenario: "You're trying to explain how the internet works to a 10-year-old.",
+            question: "Which analogy best helps understanding?",
+            hint: "Good analogies map complex ideas onto familiar ones.",
+            options: [
+              "It's a series of tubes (too vague)",
+              "It's like a postal system: your computer writes a letter (data), puts it in an envelope (packet) with an address (IP), and the post office (router) delivers it to the right house (server)",
+              "It's just magic",
+              "It's like a phone call (partial, misses key aspects)"
+            ],
+            correct: 1,
+            explanation: "Powerful analogies map structure, not just surface similarity. The postal system analogy captures addressing, packaging, routing, and delivery — all key internet concepts. Analogical reasoning lets you transfer understanding from known domains to unknown ones."
+          },
+          {
+            scenario: "Your startup is struggling with user retention. Users sign up but don't come back after day 1.",
+            question: "Which analogy reveals the best strategic insight?",
+            hint: "Think about other situations where you need to keep people coming back.",
+            options: [
+              "It's like a leaky bucket — you're pouring users in the top but they drain out. Fix the holes (improve onboarding, add value early) before pouring more in",
+              "It's like fishing — just cast a wider net",
+              "It's like cooking — add more ingredients",
+              "It's like a race — just go faster"
+            ],
+            correct: 0,
+            explanation: "The 'leaky bucket' analogy instantly clarifies priority: stop the leak before adding more water. Many startups waste money acquiring new users while ignoring why existing ones leave. The analogy makes the correct strategy obvious."
+          },
+          {
+            scenario: "You need to solve a conflict between two team members who both want to lead a project.",
+            question: "Which historical/analogical approach gives the best framework?",
+            hint: "How have wise leaders handled competing claims throughout history?",
+            options: [
+              "Fire both of them",
+              "Flip a coin",
+              "Like King Solomon's approach: instead of choosing one, redefine the problem. Split the project into two complementary parts, each person leads their strength area",
+              "Let them fight it out"
+            ],
+            correct: 2,
+            explanation: "Solomon's wisdom was reframing the problem. Instead of binary win/lose, create win/win. This applies everywhere: territorial disputes, budget fights, feature prioritization. The best solutions often come from redefining the problem rather than picking a side."
+          }
+        ]
+      },
+      {
+        name: 'Lateral Thinking',
+        difficulty: 'Advanced',
+        xp: 35,
+        questions: [
+          {
+            scenario: "A truck is stuck under a bridge by just 2 inches. Workers discuss cutting the bridge, disassembling the truck, or rerouting traffic for days.",
+            question: "What simple lateral thinking solution are they missing?",
+            hint: "Everyone is looking at the bridge and truck. What else is there?",
+            options: [
+              "Use a bigger truck to push it through",
+              "Let air out of the truck's tires to lower it by 2+ inches, drive through, then reinflate",
+              "Call the mayor",
+              "Build a new road around the bridge"
+            ],
+            correct: 1,
+            explanation: "Lateral thinking means approaching from unexpected angles. Everyone fixated on the truck body and bridge structure, ignoring the tires — the simplest variable. This story (possibly apocryphal) perfectly illustrates how we get trapped in obvious solution spaces. Always ask: what am I NOT looking at?"
+          },
+          {
+            scenario: "Your restaurant has amazing food but empty tables. Competitors with average food are always full.",
+            question: "What lateral thinking insight could transform your business?",
+            hint: "Why do people REALLY go to restaurants? It might not be what you think.",
+            options: [
+              "Make the food even better",
+              "Lower prices to zero",
+              "Realize people go to restaurants for the EXPERIENCE (ambiance, Instagram-worthy decor, unique interactions, social proof), not just food. Transform the experience.",
+              "Add more menu items"
+            ],
+            correct: 2,
+            explanation: "Lateral thinking questions your fundamental assumption: 'restaurant success = food quality.' In reality, people choose restaurants for social experiences, atmosphere, identity signaling, and convenience. The most successful restaurants sell experiences, not meals. This principle applies to any product."
+          },
+          {
+            scenario: "You're playing chess and your opponent has more powerful pieces. Direct confrontation means you lose.",
+            question: "What lateral strategy should you employ?",
+            hint: "If you can't win by their rules, change the game.",
+            options: [
+              "Resign immediately",
+              "Trade pieces equally and hope for the best",
+              "Avoid direct confrontation. Control the tempo, create complications, attack where they're weak (not where they're strong), change the nature of the position",
+              "Copy their moves exactly"
+            ],
+            correct: 2,
+            explanation: "When outmatched in direct power, lateral strategy means changing the battlefield. Guerrilla warfare, startup disruption, and political judo all use this principle: don't fight where the opponent is strong. Create chaos, complexity, and new rules where your advantages matter."
+          }
+        ]
+      },
+      {
+        name: 'Systems Thinking',
+        difficulty: 'Advanced',
+        xp: 35,
+        questions: [
+          {
+            scenario: "A city has terrible traffic. The government builds more roads. Five years later, traffic is WORSE than before.",
+            question: "What systems thinking concept explains this?",
+            hint: "More capacity can create more demand — a feedback loop.",
+            options: [
+              "The roads were built poorly",
+              "Induced demand: new roads attract more drivers, development spreads further out, and the system reaches a new (worse) equilibrium. The 'solution' fed back into the problem.",
+              "People just like driving more now",
+              "The population doubled"
+            ],
+            correct: 1,
+            explanation: "Systems thinking reveals feedback loops. More roads → more convenience → more people drive → more development further away → more traffic → 'need' more roads. This is a reinforcing loop. True solutions address root causes (public transit, mixed-use zoning) not symptoms."
+          },
+          {
+            scenario: "A company offers bonuses for bug fixes. Initially, bug fix rate soars. Then, strangely, the total number of bugs increases over time.",
+            question: "What systemic problem emerged?",
+            hint: "People respond to incentives — sometimes in unexpected ways.",
+            options: [
+              "The software got more complex naturally",
+              "Developers unconsciously (or consciously) create more bugs to fix them for bonuses — a perverse incentive creating a reinforcing loop in the wrong direction",
+              "The testers got better at finding bugs",
+              "Computers got slower"
+            ],
+            correct: 1,
+            explanation: "This is 'cobra effect' — named after a colonial policy that paid for dead cobras, causing people to breed cobras. Systems thinking anticipates second-order effects and unintended consequences. Better incentive: reward low bug rates in new code, not fixing bugs."
+          },
+          {
+            scenario: "Removing wolves from Yellowstone caused unexpected damage: riverbanks eroded, certain trees disappeared, and songbird populations crashed.",
+            question: "What systems principle does this demonstrate?",
+            hint: "In complex systems, everything is connected to everything.",
+            options: [
+              "Wolves are magical creatures",
+              "Cascading effects in interconnected systems: wolves controlled deer → deer overgrazed riverbank trees → no tree roots to hold banks → erosion → habitat loss for birds. One removal cascaded through the entire ecosystem.",
+              "The weather changed",
+              "It was just a coincidence"
+            ],
+            correct: 1,
+            explanation: "This is a 'trophic cascade' — a perfect example of systems interconnection. Removing one element sends ripples through the entire system in unpredictable ways. This applies to organizations too: firing a key connector can collapse communication networks, removing a product can cascade through revenue."
+          }
+        ]
+      },
+      {
+        name: 'Probabilistic Thinking',
+        difficulty: 'Advanced',
+        xp: 40,
+        questions: [
+          {
+            scenario: "A medical test is 99% accurate. You test positive for a rare disease that affects 1 in 10,000 people. A friend says 'you definitely have it — the test is 99% accurate!'",
+            question: "Is your friend correct?",
+            hint: "Think about how many false positives there would be in 10,000 people.",
+            options: [
+              "Yes — 99% accuracy means 99% chance I have it",
+              "No — with a 1/10,000 base rate, even a 99% accurate test gives roughly a 1% chance of actually having the disease (base rate neglect)",
+              "It depends on how I feel",
+              "Tests are never wrong"
+            ],
+            correct: 1,
+            explanation: "In 10,000 people: 1 truly has it (test catches it, 99% chance). 9,999 don't have it, but 1% false positive = ~100 false positives. So ~101 positive results, but only 1 is real. Your actual probability ≈ 1/101 ≈ 1%. This is Bayes' Theorem in action — base rates matter enormously!"
+          },
+          {
+            scenario: "You've flipped a fair coin and gotten heads 7 times in a row. Your friend bets $50 that the next flip will be tails because 'it's due.'",
+            question: "Should you take the bet?",
+            hint: "Does the coin remember what happened before?",
+            options: [
+              "No — tails IS more likely after 7 heads",
+              "Yes — each flip is independent. The probability is still 50/50. The coin has no memory. Your friend is falling for the Gambler's Fallacy.",
+              "It depends on the coin's brand",
+              "No — the coin might be rigged"
+            ],
+            correct: 1,
+            explanation: "The Gambler's Fallacy is believing that past random events affect future ones. Each coin flip is independent — the probability is always 50/50 regardless of history. This fallacy costs people millions in casinos and leads to terrible decisions in investing and life."
+          },
+          {
+            scenario: "You're deciding between two job offers. Job A: guaranteed $80K salary. Job B: 60% chance of $120K, 40% chance of $50K.",
+            question: "Beyond expected value, what should drive your decision?",
+            hint: "Expected value is just one factor. What about your personal situation?",
+            options: [
+              "Always pick the higher expected value (Job B = $92K expected)",
+              "Always pick the guaranteed option",
+              "Consider your risk tolerance, financial situation, and downside impact. If $50K means you can't pay rent, the downside risk matters more than the higher expected value.",
+              "Flip a coin"
+            ],
+            correct: 2,
+            explanation: "Expected value ($92K for B vs $80K for A) is just one factor. Risk-adjusted thinking considers: Can you survive the downside? How much does extra upside matter to you? If $50K means financial crisis but $120K is just 'nice,' the rational choice might be $80K guaranteed. This is expected UTILITY, not just expected VALUE."
+          }
+        ]
+      },
+      {
+        name: 'Creative Problem Solving',
+        difficulty: 'Advanced',
+        xp: 40,
+        questions: [
+          {
+            scenario: "You need to generate innovative solutions for reducing plastic waste in your city. Your team keeps suggesting the same recycling ideas.",
+            question: "What technique would break through this creative block?",
+            hint: "Sometimes you need to force your brain out of familiar patterns.",
+            options: [
+              "Keep brainstorming the same way — ideas will come eventually",
+              "Use 'SCAMPER' technique: Substitute, Combine, Adapt, Modify, Put to other use, Eliminate, Reverse. Apply each to plastic usage systematically.",
+              "Google what other cities did and copy them",
+              "Give up on innovation"
+            ],
+            correct: 1,
+            explanation: "SCAMPER is a structured creativity tool. Substitute: what replaces plastic? Combine: can packaging serve another purpose? Adapt: how does nature package things? Eliminate: which packaging is unnecessary? Reverse: what if stores were packaging-free? Structure paradoxically enables more creativity than free-form brainstorming."
+          },
+          {
+            scenario: "NASA engineers needed to fix a CO2 filter on Apollo 13 using only materials available on the spacecraft — square filters had to fit round holes.",
+            question: "What creative problem-solving principle saved the astronauts?",
+            hint: "When you can't get what you need, transform what you have.",
+            options: [
+              "Give up and hope for the best",
+              "Constraint creativity: inventory ALL available materials (suit hoses, cardboard, duct tape, plastic bags), then combine them in novel ways to create a solution that works within severe constraints",
+              "Call for a delivery from Earth",
+              "Ask the astronauts to breathe less"
+            ],
+            correct: 1,
+            explanation: "This is one of history's greatest creative problem-solving moments. Engineers built an adapter from socks, plastic bags, cardboard, and duct tape. The principle: inventory your available resources with fresh eyes, ignore their 'intended' purpose, and combine them creatively. Functional fixedness is the enemy of innovation."
+          },
+          {
+            scenario: "You're designing a product but every idea feels derivative — like it already exists. You feel stuck in a creative rut.",
+            question: "What's the most effective way to generate truly novel ideas?",
+            hint: "Innovation often happens at the intersection of different fields.",
+            options: [
+              "Study only your own industry more deeply",
+              "Cross-pollinate: study unrelated fields. How does biology solve similar problems? What would a musician's approach look like? Combine insights from 2-3 different disciplines into something new.",
+              "Wait for inspiration to strike",
+              "Copy competitors with minor changes"
+            ],
+            correct: 1,
+            explanation: "The most innovative ideas come from the intersection of different fields. Velcro came from studying burrs (biology → engineering). Airbnb combined hospitality + sharing economy + technology. Steve Jobs applied calligraphy to computer fonts. Cross-pollination is the most reliable source of breakthrough innovation."
+          }
+        ]
+      },
+      {
+        name: 'Abstraction & Modeling',
+        difficulty: 'Expert',
+        xp: 45,
+        questions: [
+          {
+            scenario: "You need to understand why your business is losing customers. There are hundreds of variables: pricing, product quality, support, competition, market trends, seasonality, etc.",
+            question: "What's the best way to make sense of this complexity?",
+            hint: "You can't analyze everything at once. What matters most?",
+            options: [
+              "Track every possible variable simultaneously",
+              "Create a simplified model: identify the 3-5 most impactful variables, map their relationships, and test predictions against real data. Iterate and add complexity only if needed.",
+              "Just pick one variable and hope it's the right one",
+              "Accept that it's too complex to understand"
+            ],
+            correct: 1,
+            explanation: "Abstraction means simplifying reality to its essential elements. All models are wrong, but some are useful (George Box). Start simple, validate, then add complexity. A model with 3 key variables that's 80% accurate is more useful than a 100-variable model you can't understand or act on."
+          },
+          {
+            scenario: "Two seemingly different problems: (A) scheduling airport gates for planes, and (B) assigning colors to a map so no adjacent countries share colors.",
+            question: "Why would a problem-solver see these as the SAME problem?",
+            hint: "Strip away the surface details. What's the underlying structure?",
+            options: [
+              "They're not related at all",
+              "Both are 'graph coloring' problems: entities (planes/countries) with constraints (time conflicts/shared borders) need assignments (gates/colors) that avoid conflicts. The abstract structure is identical.",
+              "They both involve colors",
+              "They're both about transportation"
+            ],
+            correct: 1,
+            explanation: "Abstraction reveals that problems with completely different surfaces can have identical deep structures. Once you recognize the abstract pattern (graph coloring/constraint satisfaction), solutions from one domain transfer to another. This is why mathematicians and computer scientists can solve problems in any field."
+          },
+          {
+            scenario: "You're explaining your company's revenue model to investors. The actual system has 47 revenue streams, complex pricing tiers, and seasonal adjustments.",
+            question: "What level of abstraction should you present?",
+            hint: "Your audience determines the right level of detail.",
+            options: [
+              "Show all 47 revenue streams in full detail",
+              "Present 3-4 main revenue categories that capture 90% of revenue, show growth trends, and have detailed breakdowns ready if asked. Match abstraction level to audience needs.",
+              "Just say 'we make money'",
+              "Only show the single biggest revenue stream"
+            ],
+            correct: 1,
+            explanation: "The art of abstraction is choosing the right level of detail for the context. Investors need to understand the business model, not every line item. But you must be ready to zoom in. Think of it as Google Maps: start at country level, zoom to city, then street. Each level serves different decisions."
+          }
+        ]
+      },
+      {
+        name: 'Optimization & Trade-offs',
+        difficulty: 'Expert',
+        xp: 50,
+        questions: [
+          {
+            scenario: "You're planning your study schedule. You could spend 10 hours mastering one subject to get 95% proficiency, or spend 2 hours each on 5 subjects to get 70% proficiency in each.",
+            question: "Which approach demonstrates better optimization thinking?",
+            hint: "Consider the law of diminishing returns and your overall goals.",
+            options: [
+              "Always aim for 95% — excellence matters",
+              "Evaluate the context: if you need broad competency (like for a general exam), the 5×2hr plan has better ROI due to diminishing returns. The last 25% of mastery often takes 80% of the effort.",
+              "Study nothing and rely on talent",
+              "Study all subjects for 10 hours each"
+            ],
+            correct: 1,
+            explanation: "This is the Pareto Principle (80/20 rule) in action. Getting from 0→70% might take 2 hours, but 70→95% takes 8 more hours. The marginal return diminishes sharply. Optimization means allocating resources where marginal benefit is highest. Context matters: a surgeon needs 99% in their specialty, but a generalist benefits from breadth."
+          },
+          {
+            scenario: "Your startup can either: (A) build the perfect product and launch in 12 months, or (B) build a good-enough product, launch in 3 months, and improve based on user feedback.",
+            question: "What optimization principle should guide this decision?",
+            hint: "Information has value. When do you get the most valuable information?",
+            options: [
+              "Always choose perfection — you only launch once",
+              "Speed of learning matters more than initial quality. Option B gives you 9 months of real user data to optimize the RIGHT things, rather than guessing what perfection looks like.",
+              "Flip a coin — both are equally valid",
+              "Don't launch at all until you're 100% sure"
+            ],
+            correct: 1,
+            explanation: "This is the 'speed of learning' optimization. You're optimizing for information, not just product quality. Real user data is infinitely more valuable than assumptions. Every month without users is a month of building potentially wrong features. Optimize your learning rate, and product quality follows."
+          },
+          {
+            scenario: "A factory can produce quality at 99.9% (costs $10M/year) or 99.99% (costs $50M/year). The product is smartphone cases.",
+            question: "Is the 10x cost for 10x quality improvement justified?",
+            hint: "What's the actual cost of the failures at each quality level?",
+            options: [
+              "Yes — always maximize quality",
+              "No — for smartphone cases, the cost of a 0.1% defect rate (return/replace at ~$5 per case) is far less than $40M extra. The optimization point is 99.9%. Save 99.99% for products where failure is catastrophic (medical devices, aircraft parts).",
+              "Reduce quality to 90% to save even more",
+              "Quality doesn't matter for any product"
+            ],
+            correct: 1,
+            explanation: "Optimal quality isn't maximum quality — it's where marginal cost of improvement equals marginal cost of failures. For phone cases at $5/unit, 0.1% failure = $5 per 1000 units = negligible. For aircraft parts where failure means lives lost, 99.99%+ is the minimum. Context determines the optimization point."
+          }
+        ]
+      },
+      {
+        name: 'Meta-Problem Solving',
+        difficulty: 'Expert',
+        xp: 50,
+        questions: [
+          {
+            scenario: "You've been working on a difficult problem for 3 hours with no progress. You feel frustrated and keep trying the same approaches.",
+            question: "What meta-problem-solving strategy should you apply?",
+            hint: "Sometimes the problem isn't the problem — your approach to it is.",
+            options: [
+              "Keep pushing harder — persistence always wins",
+              "Step back and evaluate your problem-solving PROCESS: Am I solving the right problem? Am I using the right tools? Do I need to reframe? Should I take a break for diffuse thinking?",
+              "Give up permanently",
+              "Ask someone else to solve it for you"
+            ],
+            correct: 1,
+            explanation: "Meta-problem solving means thinking about your thinking. After 3 hours of no progress, the issue is likely your approach, not your effort. Research shows that incubation (stepping away) activates diffuse thinking networks that find connections your focused brain missed. Work ON the process, not just IN it."
+          },
+          {
+            scenario: "You successfully solved Problem X using Method A. Now you face Problem Y, which looks similar but is actually quite different.",
+            question: "What cognitive trap should you watch out for?",
+            hint: "Your past success might be your current obstacle.",
+            options: [
+              "There's no trap — use Method A again since it worked before",
+              "Einstellung effect (mental set): your brain will automatically try Method A because it worked before, potentially blinding you to simpler or better approaches for this new problem. Consciously consider fresh approaches first.",
+              "Forget everything you learned from Problem X",
+              "Always use the newest method available"
+            ],
+            correct: 1,
+            explanation: "The Einstellung effect is one of the most dangerous cognitive traps in problem-solving. Expert chess players sometimes miss a simpler move because they see a familiar pattern first. Expertise becomes a cage. The antidote: before applying known methods, spend 2 minutes asking 'what if I had NO prior experience? How would I approach this fresh?'"
+          },
+          {
+            scenario: "You need to decide whether to learn a new programming language, framework, or focus on deeper algorithm knowledge. Time is limited.",
+            question: "What meta-learning principle should guide this decision?",
+            hint: "Some knowledge transfers to everything; some only applies to one thing.",
+            options: [
+              "Always learn the newest technology",
+              "Prioritize transferable fundamentals: algorithms, data structures, design patterns, and problem-solving frameworks transfer across ALL languages and last a career. Specific technologies come and go.",
+              "Only learn what's immediately useful at your current job",
+              "Learn everything simultaneously"
+            ],
+            correct: 1,
+            explanation: "This is the 'half-life of knowledge' concept. Specific tool knowledge (React, Python syntax) has a short half-life — it changes frequently. Fundamental concepts (algorithms, design patterns, system thinking) have a long half-life — they've been relevant for 50+ years. Invest most of your limited time in long-half-life knowledge."
+          }
+        ]
+      },
+      {
+        name: 'Adaptive Problem Solving',
+        difficulty: 'Expert',
+        xp: 55,
+        questions: [
+          {
+            scenario: "You've built a detailed 6-month business plan. In month 2, a major competitor launches a product that makes half your plan obsolete.",
+            question: "How should you adapt?",
+            hint: "Plans are useful, but clinging to them can be fatal.",
+            options: [
+              "Stick to the plan — you spent weeks making it",
+              "Panic and abandon everything",
+              "Keep the valid parts of your plan, rapidly reassess the affected elements, identify new opportunities the competitor's launch creates, and create a revised plan. The planning skill matters more than the plan itself.",
+              "Copy the competitor exactly"
+            ],
+            correct: 2,
+            explanation: "Eisenhower said: 'Plans are useless, but planning is indispensable.' The value is in the thinking process, not the document. Adaptive problem-solvers hold their plans loosely, keep the strategic direction but flex on tactics, and see disruptions as information rather than disasters. A competitor's launch also reveals market validation."
+          },
+          {
+            scenario: "You're leading a team through a crisis. Information is incomplete, stakes are high, and you have to make decisions NOW.",
+            question: "What decision-making framework works best under extreme uncertainty?",
+            hint: "Perfect information isn't coming. How do you act anyway?",
+            options: [
+              "Wait for perfect information before deciding anything",
+              "Apply the OODA loop: Observe (gather what info you can fast), Orient (make sense of it with your experience), Decide (commit to a direction), Act (execute). Then immediately loop back. Speed of iteration beats accuracy of any single decision.",
+              "Make decisions based purely on gut feeling",
+              "Let someone else decide"
+            ],
+            correct: 1,
+            explanation: "The OODA loop (Observe, Orient, Decide, Act) was developed by fighter pilot John Boyd. In fast-moving situations, the side that iterates through this loop faster wins. A good decision now beats a perfect decision later. The key insight: you'll be wrong sometimes, but fast iteration means you'll correct faster than slow perfection."
+          },
+          {
+            scenario: "You've tried 5 different approaches to a problem and all have failed. You're running out of ideas and motivation.",
+            question: "What does the science of problem-solving suggest at this point?",
+            hint: "Each failure carries information if you extract it.",
+            options: [
+              "The problem is unsolvable — accept defeat",
+              "Try the same 5 approaches again but harder",
+              "Conduct a 'failure audit': What specifically did each approach teach you? What constraints did they reveal? The intersection of all failure reasons often points directly to the correct approach. Thomas Edison eliminated 1000 ways NOT to make a lightbulb.",
+              "Switch to an easier problem"
+            ],
+            correct: 2,
+            explanation: "Each failure is data. A 'failure audit' asks: Why specifically did this fail? What assumption was wrong? What worked partially? Often, combining the partially-successful elements of failed attempts creates the breakthrough. Edison, Dyson (5,127 prototypes), and WD-40 (named for the 40th formula) all found success by systematically extracting information from failure."
+          }
+        ]
+      },
+      {
+        name: 'Grand Master Challenge',
+        difficulty: 'Master',
+        xp: 60,
+        questions: [
+          {
+            scenario: "You're advising a developing country's government. They want to reduce poverty. They have limited budget and can only focus on ONE major initiative. Proposals include: (A) Build factories for jobs, (B) Free university education, (C) Universal primary education + basic healthcare, (D) Foreign investment incentives.",
+            question: "Which approach shows the deepest problem-solving wisdom?",
+            hint: "Think about leverage points, feedback loops, and second-order effects over decades.",
+            options: [
+              "Build factories — immediate jobs are most important",
+              "Free university — education is the answer to everything",
+              "Universal primary education + basic healthcare — this creates the broadest human capital foundation, enables everything else, has the strongest evidence base, and creates positive feedback loops across generations",
+              "Foreign investment — money solves everything"
+            ],
+            correct: 2,
+            explanation: "This combines systems thinking, first principles, optimization, and long-term strategy. Primary education + health is the highest-leverage intervention because: it affects the MOST people, creates compound returns over decades, enables all other development, and has the strongest evidence base globally. It's the foundation that makes factories, universities, and investment actually work."
+          },
+          {
+            scenario: "A brilliant AI researcher discovers a potential breakthrough that could either: (A) cure all diseases but requires publishing research that could also be weaponized, or (B) be kept secret but many people will die from curable diseases while waiting for safe deployment.",
+            question: "What problem-solving framework handles this ethical complexity?",
+            hint: "Some problems have no 'correct' answer. The framework matters more than the conclusion.",
+            options: [
+              "Always publish — knowledge should be free",
+              "Always keep it secret — safety first",
+              "Multi-stakeholder analysis: map all affected parties, quantify risks and benefits for each, explore middle paths (staged release, peer review, governance frameworks), and acknowledge that this requires ongoing adaptation, not a one-time decision",
+              "Let someone else decide"
+            ],
+            correct: 2,
+            explanation: "The highest level of problem-solving recognizes that complex problems rarely have binary solutions. Multi-stakeholder analysis + staged approaches + governance frameworks + ongoing adaptation represent sophisticated problem-solving. The key insight: the process of decision-making matters as much as the decision itself. Wise problem-solvers build systems for good decisions, not just make individual good decisions."
+          },
+          {
+            scenario: "You've completed all levels of Problem Solving. Now someone asks: 'What's the single most important problem-solving skill?'",
+            question: "Based on everything you've learned, what is it?",
+            hint: "What enables all other problem-solving skills?",
+            options: [
+              "Raw intelligence",
+              "Memorizing frameworks",
+              "The ability to accurately define the problem. Every framework, technique, and skill is useless if applied to the wrong problem. The meta-skill is asking 'Am I solving the right problem?' before asking 'How do I solve this problem?'",
+              "Having more data than anyone else"
+            ],
+            correct: 2,
+            explanation: "Einstein said: 'If I had an hour to solve a problem, I'd spend 55 minutes defining it and 5 minutes solving it.' Problem DEFINITION is the master skill. It encompasses first principles (questioning assumptions), systems thinking (understanding context), abstraction (finding the right level), and meta-cognition (thinking about thinking). You've completed the Problem Solving course — carry this skill forward into everything you do. 🎓"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'strategy-making',
+    name: 'Strategy Making',
+    icon: '♟️',
+    desc: 'Build decision frameworks, risk assessment & long-term planning',
+    levels: [
+      {
+        name: 'Strategic Foundations',
+        difficulty: 'Beginner',
+        xp: 15,
+        questions: [
+          {
+            scenario: "You want to start a small business. You have $5,000 savings, a full-time job, and evenings free. You see opportunities in: food truck, online tutoring, and freelance design.",
+            question: "What's the FIRST strategic question to ask?",
+            hint: "Strategy starts before choosing options.",
+            options: [
+              "Which business will make the most money?",
+              "What unique strengths, resources, and constraints do I have? And what does the market actually need? Strategy starts with honest self-assessment and market understanding.",
+              "What's trending on social media?",
+              "What did my friend do?"
+            ],
+            correct: 1,
+            explanation: "Strategy begins with clarity about yourself and your environment — not with choosing options. Sun Tzu: 'Know yourself and know your enemy, and you will not be defeated.' Your constraints ($5K, evenings only) eliminate some options immediately. Your skills determine where you have an advantage. The market determines where there's demand."
+          },
+          {
+            scenario: "Two coffee shops open across the street from each other. Shop A tries to be cheapest. Shop B tries to have the best ambiance and specialty drinks.",
+            question: "What strategic concept are they demonstrating?",
+            hint: "Can you win by being everything to everyone?",
+            options: [
+              "Random business decisions",
+              "Differentiation strategy: they're choosing different competitive positions. Shop A competes on cost, Shop B on experience. Both can succeed because they serve different customer needs. The worst strategy would be being mediocre at both.",
+              "They should merge",
+              "One of them should close"
+            ],
+            correct: 1,
+            explanation: "Michael Porter's fundamental insight: you must choose a clear competitive position. Cost leadership, differentiation, or niche focus. Companies that try to be everything (decent quality AND low price AND great experience) get 'stuck in the middle' and lose to focused competitors on every dimension."
+          },
+          {
+            scenario: "You're playing a board game. You notice two opponents are about to fight each other while a third player quietly builds up resources in the corner.",
+            question: "What strategic principle is the third player using?",
+            hint: "Sometimes the best strategy is avoiding battle entirely.",
+            options: [
+              "They're just lucky",
+              "They're using 'third party advantage' / strategic patience: while others exhaust resources in conflict, they build strength unopposed. They'll be strongest when the dust settles.",
+              "They're losing because they're not fighting",
+              "They should join the fight"
+            ],
+            correct: 1,
+            explanation: "The 'laughing third party' is a timeless strategy. Let competitors weaken each other, then act from a position of strength. In business: while Uber and Lyft burn billions fighting, other mobility startups quietly build in underserved markets. In diplomacy: Switzerland prospered for centuries by staying out of European wars."
+          }
+        ]
+      },
+      {
+        name: 'Decision Frameworks',
+        difficulty: 'Beginner',
+        xp: 15,
+        questions: [
+          {
+            scenario: "You're offered a job in another city. Better salary (+40%), but you'd leave friends, a comfortable apartment, and a city you love. You've been going back and forth for weeks.",
+            question: "What decision framework would help most?",
+            hint: "When emotions cloud judgment, structure clarifies.",
+            options: [
+              "Go with your gut — first instinct is best",
+              "Create a weighted decision matrix: list factors (salary, relationships, lifestyle, career growth, etc.), weight each by importance to YOU (not society), score each option, and compare totals. Then check if the result 'feels right.'",
+              "Ask 50 friends and go with majority vote",
+              "Flip a coin"
+            ],
+            correct: 1,
+            explanation: "A weighted decision matrix turns emotional chaos into structured analysis. But here's the key: after calculating, check your emotional reaction. If the 'winning' option makes you feel dread, that's important data too. The framework clarifies thinking but shouldn't override deep intuition. Use both System 1 (intuition) and System 2 (analysis)."
+          },
+          {
+            scenario: "Your company needs to decide between two product strategies. Option A has 70% chance of moderate success ($1M profit). Option B has 25% chance of massive success ($10M profit) but 75% chance of total failure ($0).",
+            question: "Which should you choose?",
+            hint: "Expected value isn't the only consideration. Think about what failure means.",
+            options: [
+              "Always Option A — certainty is king",
+              "Always Option B — higher expected value ($2.5M vs $0.7M)",
+              "It depends on your company's situation: Can you survive failure? If yes and you can make this bet repeatedly, B's higher expected value wins long-term. If failure means bankruptcy, A's reliability is strategic. This is expected value + risk tolerance analysis.",
+              "Neither — do nothing"
+            ],
+            correct: 2,
+            explanation: "This is where strategy gets sophisticated. Expected value (B=$2.5M vs A=$0.7M) favors B. But if you only get ONE shot and failure means game over, expected value is irrelevant — survival is the priority. Amazon's Jeff Bezos takes big bets because Amazon can absorb failures. A startup with 3 months of runway cannot. Strategy must match your resilience."
+          },
+          {
+            scenario: "You need to decide: learn AI/ML skills or double down on your current expertise. Both seem valuable but you can only commit fully to one for the next year.",
+            question: "What strategic decision principle applies here?",
+            hint: "Think about which doors each option opens or closes.",
+            options: [
+              "Choose whatever pays more right now",
+              "Apply 'optionality' thinking: which choice opens more future doors? If AI/ML skills + your current expertise create a rare, valuable combination, that might create more future options than deepening either alone. Maximize future flexibility.",
+              "Follow whatever's trending on LinkedIn",
+              "Don't decide — try both halfway"
+            ],
+            correct: 1,
+            explanation: "Optionality is a powerful strategic concept from finance applied to life decisions. An option is valuable because it gives you the RIGHT but not obligation to do something later. Skills that create rare combinations (AI + healthcare, design + engineering) generate maximum optionality. The best strategic decisions expand your future possibility space."
+          }
+        ]
+      },
+      {
+        name: 'Risk Assessment',
+        difficulty: 'Beginner',
+        xp: 20,
+        questions: [
+          {
+            scenario: "You're considering investing your savings. Your friend made 200% return on cryptocurrency last year and urges you to invest everything.",
+            question: "What risk assessment principles should you apply?",
+            hint: "Past returns tell you about the past, not the future.",
+            options: [
+              "Invest everything — your friend proved it works",
+              "Evaluate: What could I lose (worst case)? Can I afford that loss? Is this survivorship bias (you hear winners, not the many losers)? What's the probability of different outcomes? Never risk what you can't afford to lose.",
+              "Never invest anything — all investment is gambling",
+              "Invest half — that way you can't lose everything"
+            ],
+            correct: 1,
+            explanation: "Key risk assessment principles: (1) Survivorship bias — you hear about winners, not the silent majority who lost. (2) Maximum downside — can you survive the worst case? (3) Correlation to your needs — can you afford to lose this money? (4) Historical returns ≠ future returns. Warren Buffett's Rule #1: 'Never lose money.' Rule #2: 'Never forget Rule #1.'"
+          },
+          {
+            scenario: "You run a small business with one major client who provides 80% of your revenue. The relationship is great and they keep increasing orders.",
+            question: "What risk does a strategist immediately identify here?",
+            hint: "The relationship is great NOW. What could change?",
+            options: [
+              "No risk — a great client relationship is pure upside",
+              "Massive concentration risk: if that ONE client leaves, changes direction, goes bankrupt, or finds a cheaper supplier, you lose 80% of revenue instantly. This is a strategic vulnerability that must be diversified, even if it means growing slower.",
+              "You should drop the client to reduce risk",
+              "You should demand a 10-year contract"
+            ],
+            correct: 1,
+            explanation: "Concentration risk is one of the most dangerous strategic vulnerabilities. It feels comfortable because the one client is reliable — until they're not. Strategic risk assessment means: never let any single point of failure control your survival. Diversify while things are good. The time to fix the roof is when the sun is shining."
+          },
+          {
+            scenario: "You're launching a product. Your best-case scenario: $5M revenue in year 1. Your realistic scenario: $1M. Your worst case: $200K. Everyone on the team is planning around the best case.",
+            question: "What's the strategically wise approach?",
+            hint: "Hope is not a strategy. How do you plan for multiple futures?",
+            options: [
+              "Plan for best case — positive thinking attracts success",
+              "Plan for worst case — if you can't survive $200K, the venture is too risky regardless of upside. Then work toward the realistic case while positioning for upside. Build a plan that's robust across all scenarios, not optimized for one.",
+              "Average the three numbers and plan for that",
+              "Only plan for the realistic case"
+            ],
+            correct: 1,
+            explanation: "Strategic robustness means your plan must survive the worst case. If $200K means you go bankrupt, you need to either: lower your burn rate, raise more capital, or reconsider the venture. Then target the realistic case with plans to capture upside. This is 'pre-mortem' thinking — imagine failure has happened, then prevent it. Plans optimized for best-case are fragile."
+          }
+        ]
+      },
+      {
+        name: 'Competitive Strategy',
+        difficulty: 'Intermediate',
+        xp: 25,
+        questions: [
+          {
+            scenario: "You're a small streaming service competing against Netflix, Disney+, and Amazon Prime. They spend billions on content. Your budget is 1/100th of theirs.",
+            question: "What competitive strategy gives you the best chance?",
+            hint: "You can't outspend giants. But you can outmaneuver them.",
+            options: [
+              "Try to compete on everything — wider selection than Netflix",
+              "Find a specific niche they underserve (e.g., indie film, anime, educational content for specific age groups) and become THE best option in that narrow segment. Own a small pond rather than drowning in an ocean.",
+              "Just give up — the big companies already won",
+              "Lower your price below theirs"
+            ],
+            correct: 1,
+            explanation: "This is focus strategy / niche dominance. Crunchyroll dominated anime streaming even against Netflix. Criterion Collection owns classic/art film. Masterclass owns expert-taught learning. Giants can't be the best at EVERYTHING. Find where passionate audiences are underserved, and be 10x better there. It's the 'riches in niches' principle."
+          },
+          {
+            scenario: "Your successful product is being copied by a larger company with more resources. They'll clone your features within 6 months.",
+            question: "What's your strategic response?",
+            hint: "Features can be copied. What can't be?",
+            options: [
+              "Sue them for copying (expensive and slow)",
+              "Give up — big companies always win",
+              "Shift your moat to things that can't be easily copied: community (network effects), data (unique insights from your users), brand loyalty (emotional connection), switching costs (integration depth), and speed of innovation (stay 6 months ahead perpetually)",
+              "Copy their features in return"
+            ],
+            correct: 2,
+            explanation: "Strategic moats are advantages competitors can't easily replicate. Features are the weakest moat — they're easily copied. Strong moats include: network effects (Facebook: useless without friends), switching costs (Adobe: years of learning), data advantages (Google: better with more queries), and community (Harley-Davidson: identity, not just bikes). Build moats, not features."
+          },
+          {
+            scenario: "In chess, a player sacrifices their queen (most powerful piece) but sets up a forced checkmate in 4 moves. Their opponent, now with more material, can't escape.",
+            question: "What strategic business principle does this illustrate?",
+            hint: "Short-term loss for long-term gain.",
+            options: [
+              "Never sacrifice your best asset",
+              "Material advantage always wins",
+              "Strategic sacrifice: giving up short-term advantage for long-term decisive victory. Amazon operated at a loss for years (sacrificed profits) to build infrastructure, customer base, and market position that became unbeatable.",
+              "Chess has no business applications"
+            ],
+            correct: 2,
+            explanation: "Strategic sacrifice is one of the most sophisticated strategy concepts. Amazon, Tesla, and Uber all intentionally sacrificed short-term profits to build long-term strategic positions. The key: the sacrifice must CREATE a winning endgame, not just delay losing. Jeff Bezos: 'Your margin is my opportunity.' He sacrificed margins to build scale that competitors couldn't match."
+          }
+        ]
+      },
+      {
+        name: 'Resource Allocation',
+        difficulty: 'Intermediate',
+        xp: 25,
+        questions: [
+          {
+            scenario: "You have 10 hours per week for self-improvement. You could: learn a language (3 hrs), exercise (3 hrs), read (2 hrs), network (2 hrs). But a productivity guru says you should spend all 10 hours on your 'one thing.'",
+            question: "What resource allocation principle should guide you?",
+            hint: "Diversification applies to life, not just investing.",
+            options: [
+              "All 10 hours on one thing — focus is everything",
+              "Apply portfolio thinking: your life needs balanced investment across health (exercise), mind (reading), skills (language), and social capital (network). Over-investing in one area creates fragility. The allocation should match your goals and diminishing returns.",
+              "Split equally: 2.5 hours each for 4 things",
+              "Don't plan — just do whatever feels right each day"
+            ],
+            correct: 1,
+            explanation: "Life is a portfolio, not a single stock. Pure focus maximizes one dimension but creates fragile outcomes. If your one thing becomes irrelevant, you have nothing. Balanced allocation with weighted priorities (maybe 4hrs skill, 3hrs health, 2hrs reading, 1hr network) creates a robust, growing human. But the weights should reflect YOUR specific goals and current gaps."
+          },
+          {
+            scenario: "Your company has $100K marketing budget. Channel A (social media) has shown 3x ROI. Channel B (content marketing) shows 1.5x ROI. Channel C (events) shows 5x ROI but can only absorb $20K before saturating.",
+            question: "How should you allocate the budget?",
+            hint: "ROI matters, but so does capacity.",
+            options: [
+              "All $100K on Channel C — highest ROI",
+              "Split evenly: $33K each",
+              "Maximize constrained optimization: $20K to C (highest ROI, but saturates), $60K to A (next best ROI with more capacity), $20K to B (diversification + long-term compounding effects of content). Allocate by marginal return, not average return.",
+              "All $100K on the newest channel"
+            ],
+            correct: 2,
+            explanation: "This is constrained optimization: you can't just maximize the best option because it has limits. Smart allocation fills the highest-ROI channel to capacity first, then moves to the next best. Also: content marketing has compounding returns (content keeps working forever), so its long-term ROI exceeds its short-term metrics. Consider both immediate and compounding returns."
+          },
+          {
+            scenario: "A startup must choose: hire 2 more engineers ($200K) or spend $200K on marketing. The product works but has some bugs. User growth is flat.",
+            question: "What's the strategic allocation framework here?",
+            hint: "Which investment solves the binding constraint?",
+            options: [
+              "Always invest in product — build it and they will come",
+              "Always invest in marketing — no one will know without it",
+              "Identify the binding constraint using the 'leaky bucket' test: if users sign up but leave (retention problem), fix the product first (engineers). If nobody finds the product (awareness problem), invest in marketing. If growth is flat WITH traffic, it's a product problem.",
+              "Split it 50/50 to be safe"
+            ],
+            correct: 2,
+            explanation: "Theory of Constraints says: only invest in the bottleneck. Marketing a buggy product wastes money (users leave). Perfecting a product nobody knows about wastes engineering. You must correctly identify which constraint is currently binding. Data reveals this: if conversion rate is high but traffic is low → marketing. If traffic is high but people leave → product."
+          }
+        ]
+      },
+      {
+        name: 'Game Theory Basics',
+        difficulty: 'Intermediate',
+        xp: 30,
+        questions: [
+          {
+            scenario: "Two rival gas stations are across the street. If both keep prices at $3, they each profit $5000/month. If one drops to $2.50, they steal all customers and make $8000, while the other makes $1000. If BOTH drop to $2.50, they each make only $3000.",
+            question: "What will likely happen and why?",
+            hint: "This is the Prisoner's Dilemma applied to business.",
+            options: [
+              "Both stay at $3 — it's best for everyone",
+              "Both will likely drop prices because cutting price is the 'dominant strategy' (better outcome regardless of opponent's choice: $8K > $5K if they stay, $3K > $1K if they also cut). Even though mutual cooperation ($3 each) is collectively better, individual incentives drive them to mutual destruction ($2.50 each).",
+              "One will raise prices while the other lowers",
+              "They'll take turns having low prices"
+            ],
+            correct: 1,
+            explanation: "This is the Prisoner's Dilemma — perhaps the most important concept in game theory. Individual rationality leads to collectively worse outcomes. This explains price wars, arms races, and advertising escalation. Solutions include: repeated interaction (if you'll meet again, cooperation emerges), communication, binding agreements, or changing the game structure entirely."
+          },
+          {
+            scenario: "You're negotiating a salary. You know the company's budget is $80K-$100K for the role. You're currently at $70K.",
+            question: "What game theory principle should guide your opening offer?",
+            hint: "The first number on the table has outsized influence.",
+            options: [
+              "Start low at $75K to seem reasonable",
+              "Use the anchoring effect: open near $105K (ambitious but justifiable). The first number anchors the entire negotiation. Studies show final outcomes correlate strongly with opening offers. But anchor must be defensible — have reasons ready.",
+              "Let them make the first offer",
+              "Ask for exactly what you want: $90K"
+            ],
+            correct: 1,
+            explanation: "Anchoring is one of the most powerful cognitive biases in negotiation. In experiments, arbitrary first numbers influence 'rational' negotiations by 30-50%. Opening at $105K with justification (market data, your value) makes $95K feel like a compromise for both sides. Opening at $75K makes $85K feel generous. The anchor frames the entire negotiation space."
+          },
+          {
+            scenario: "In a market, being second to launch often beats being first. Examples: Google wasn't the first search engine. Facebook wasn't the first social network. iPhone wasn't the first smartphone.",
+            question: "What strategic advantage do second movers have?",
+            hint: "First movers spend resources that second movers learn from.",
+            options: [
+              "No advantage — first mover always wins",
+              "Second movers learn from first movers' mistakes, let them educate the market, see what customers actually want (vs. what was assumed), and enter with a superior product. The pioneer bears the cost of exploration while the fast follower optimizes execution.",
+              "Second movers are just copycats with no strategy",
+              "Timing doesn't matter at all"
+            ],
+            correct: 1,
+            explanation: "Second-mover advantage (fast follower strategy) is powerful when: (1) the market needs education (first mover pays for this), (2) technology is rapidly evolving (first mover is stuck with v1), (3) customer needs become clearer over time. Google saw AltaVista's weaknesses. Apple saw Palm/BlackBerry's limitations. The strategy: let others pioneer, learn fast, execute better."
+          }
+        ]
+      },
+      {
+        name: 'Long-term Planning',
+        difficulty: 'Advanced',
+        xp: 35,
+        questions: [
+          {
+            scenario: "You're 25 years old planning your career. Two paths: Path A leads to $80K/year stable salary with 3% annual raises. Path B starts at $40K but involves building skills that could lead to $200K+ in 10 years (with more risk).",
+            question: "What long-term strategic concept should drive this decision?",
+            hint: "Think about compound growth curves, not snapshots.",
+            options: [
+              "Take Path A — guaranteed money now is always better",
+              "Think in terms of compound career capital: Path B's skill investment compounds exponentially. In 20 years, Path A = ~$144K. Path B's trajectory could reach $300K+ because skills compound and create options. At 25, you have maximum capacity to absorb risk and invest in growth.",
+              "Income doesn't matter for career planning",
+              "Switch between paths every year"
+            ],
+            correct: 1,
+            explanation: "This is compound career capital. Like compound interest, skills and reputation compound over time. The 'interest rate' on your career depends on learning rate, which is highest in challenging (risky) roles. At 25, you have 40+ working years for compounding to work AND maximum ability to recover from failure. The expected value of the growth path is massively higher over a full career."
+          },
+          {
+            scenario: "A CEO must decide: invest heavily in AI now (expensive, uncertain returns for 3-5 years) or continue optimizing the current profitable business model.",
+            question: "What strategic framework helps navigate this tension?",
+            hint: "You need to profit today AND invest for tomorrow. It's not either/or.",
+            options: [
+              "Focus entirely on current profits — AI might be a fad",
+              "Abandon current business and go all-in on AI",
+              "Use the 'Three Horizons' framework: Horizon 1 (optimize current business for today's revenue), Horizon 2 (invest in emerging opportunities like AI that'll produce revenue in 2-5 years), Horizon 3 (explore wild bets for 5-10 year future). Allocate resources across all three.",
+              "Wait and see what competitors do"
+            ],
+            correct: 2,
+            explanation: "McKinsey's Three Horizons framework prevents the strategic trap of only managing for today. H1 funds H2 and H3. H2 becomes tomorrow's H1. Companies that only optimize H1 (Kodak, Blockbuster, Nokia) get disrupted when the world changes. Companies that only invest in H3 (moonshots) run out of money. The art is balancing all three simultaneously."
+          },
+          {
+            scenario: "You're building a personal brand / reputation. You can: (A) optimize for virality (controversy, hot takes, clickbait) or (B) consistently produce thoughtful, high-quality content that grows slowly.",
+            question: "What long-term strategy principle applies here?",
+            hint: "Reputation is built in years and destroyed in minutes.",
+            options: [
+              "Virality — attention is the only currency",
+              "Compound reputation: high-quality consistency compounds trust over years. One viral controversy might get attention but damages long-term credibility. Trust is the ultimate strategic asset. It takes years to build and seconds to destroy. Optimize for 10-year reputation, not 10-minute fame.",
+              "Alternate between both approaches",
+              "Don't build a personal brand at all"
+            ],
+            correct: 1,
+            explanation: "Reputation follows the 'trust equation': Trust = (Reliability × Credibility × Intimacy) / Self-Interest. Each quality contribution compounds credibility. Each controversy depletes it. Warren Buffett: 'It takes 20 years to build a reputation and 5 minutes to ruin it.' The strategically wise play is always compound trust. It's slower but creates an unassailable strategic position."
+          }
+        ]
+      },
+      {
+        name: 'Strategic Communication',
+        difficulty: 'Advanced',
+        xp: 35,
+        questions: [
+          {
+            scenario: "You need to convince your resistant boss to adopt a new process that would save the team 10 hours/week. They're risk-averse and comfortable with the current system.",
+            question: "What communication strategy is most likely to succeed?",
+            hint: "People don't resist change — they resist being changed.",
+            options: [
+              "Send a long email with all the data and hope they read it",
+              "Go over their head to their boss",
+              "Frame it in THEIR terms: 'This would make your team 25% more productive, which supports your goal of hitting Q3 targets.' Start small with a low-risk pilot. Make it easy to say yes and hard to say no. Let them feel ownership of the decision.",
+              "Complain to coworkers until pressure forces change"
+            ],
+            correct: 2,
+            explanation: "Strategic communication means: (1) Frame the benefit in terms of THEIR goals, not yours. (2) Reduce perceived risk with a small pilot. (3) Give them ownership ('I'd love your guidance on testing this'). (4) Make the ask small and reversible. This isn't manipulation — it's empathy-driven persuasion. You're removing barriers to a good decision."
+          },
+          {
+            scenario: "You're presenting a controversial strategy to a board of directors. Half will probably agree, half will probably oppose. The decision needs near-unanimous support to proceed.",
+            question: "What strategic communication approach maximizes your chances?",
+            hint: "The presentation starts before the presentation.",
+            options: [
+              "Give a powerful presentation and hope it convinces everyone",
+              "Only invite the supportive half",
+              "Pre-wire: meet individually with each board member BEFORE the meeting. Understand their concerns, address objections privately, incorporate their feedback, and let them feel co-ownership. By the time the formal meeting happens, there should be no surprises.",
+              "Threaten to resign if they don't approve"
+            ],
+            correct: 2,
+            explanation: "'Pre-wiring' is how skilled strategists handle high-stakes decisions. Never let the first time someone hears your idea be in a public meeting where they must react. Private conversations let people: process without ego pressure, ask 'dumb' questions safely, and become advocates. The formal meeting becomes ratification of a pre-built consensus. This is how most major decisions actually get made in organizations."
+          },
+          {
+            scenario: "You made a major mistake at work that will be discovered soon. You're deciding between: getting ahead of it and disclosing it yourself, or waiting and hoping no one notices.",
+            question: "What's the strategically optimal approach?",
+            hint: "Information revealed voluntarily vs. discovered involuntarily carries very different weight.",
+            options: [
+              "Wait — maybe no one will notice",
+              "Blame someone else",
+              "Disclose proactively: come with the problem + your analysis of what went wrong + your proposed fix. This transforms 'person who made mistake' into 'leader who manages problems.' Voluntary disclosure builds trust; discovery destroys it. Control the narrative.",
+              "Minimize the mistake when confronted"
+            ],
+            correct: 2,
+            explanation: "Proactive disclosure is counterintuitively strategic. It demonstrates: accountability (rare and valued), analytical ability (you understood what went wrong), leadership (you came with solutions), and trustworthiness (you don't hide problems). Companies that disclose breaches voluntarily receive lower fines AND recover customer trust faster than those caught hiding. In career and life: own your mistakes before they own you."
+          }
+        ]
+      },
+      {
+        name: 'Negotiation Strategy',
+        difficulty: 'Advanced',
+        xp: 40,
+        questions: [
+          {
+            scenario: "You're buying a used car. The seller asks $15,000. You think it's worth $12,000. The seller seems emotionally attached to the car.",
+            question: "What negotiation strategy gets the best outcome?",
+            hint: "Negotiation isn't just about price. It's about understanding what the other person values.",
+            options: [
+              "Lowball at $8,000 and negotiate up",
+              "Pay the $15,000 — negotiating is awkward",
+              "Use interest-based negotiation: acknowledge their attachment ('clearly you've taken great care of this car'), establish objective criteria (comparable sales data, vehicle condition reports), explore other value (quick cash closing, handling paperwork, flexible timing). Find terms where both sides feel good.",
+              "Walk away immediately"
+            ],
+            correct: 2,
+            explanation: "Harvard's 'Getting to Yes' framework: separate people from the problem, focus on interests (not positions), generate options for mutual gain, and use objective criteria. The seller's attachment means respect and acknowledgment are valuable currencies. Combining fair market data with personal respect often reaches better outcomes than pure price haggling. Win-win isn't naive — it's sophisticated."
+          },
+          {
+            scenario: "In a negotiation, the other party says: 'This is our final offer. Take it or leave it.' You're not satisfied with the terms.",
+            question: "What's the best strategic response?",
+            hint: "'Final offers' are almost never final. But you need to be strategic about how you respond.",
+            options: [
+              "Accept it — they said it's final",
+              "Walk away permanently",
+              "Test it strategically: 'I understand this is your best offer on price. What if we adjusted the payment terms/timeline/scope instead?' Change the variables. Also: have a strong BATNA (Best Alternative To Negotiated Agreement) so walking away is a real option, not a bluff.",
+              "Make your own 'final offer' that's lower"
+            ],
+            correct: 2,
+            explanation: "The power in any negotiation comes from your BATNA — the better your alternative, the less you need this deal. 'Final offer' is usually a negotiation tactic, not a fact. The counter-strategy is introducing new dimensions: 'The price is fixed? Fine — can we change the payment schedule, warranty, delivery terms, or volume?' Most 'final' offers have flex in dimensions the other party hasn't considered."
+          },
+          {
+            scenario: "You're negotiating a partnership where both sides bring essential value. You need them as much as they need you. Neither side has a power advantage.",
+            question: "What negotiation strategy maximizes total value?",
+            hint: "When power is balanced, the game changes from division to creation.",
+            options: [
+              "Try to gain power advantage through bluffing",
+              "Accept a 50/50 split of everything",
+              "Focus on 'expanding the pie' before dividing it: openly share interests (not positions), find creative solutions that increase total value for both sides, then divide the larger pie. Two bakeries might compete on price, or they might specialize and refer customers to each other — creating more value for both.",
+              "Let them propose everything first"
+            ],
+            correct: 2,
+            explanation: "Integrative (win-win) negotiation is about value CREATION, not just value CLAIMING. By sharing interests openly, you often discover: you value different things differently. Maybe you want cash flow, they want equity. You want speed, they want quality. These differences are the raw material for creative deals where both sides get more than they expected. The best negotiations make the pie bigger."
+          }
+        ]
+      },
+      {
+        name: 'Strategic Adaptability',
+        difficulty: 'Expert',
+        xp: 45,
+        questions: [
+          {
+            scenario: "Your industry is being disrupted by AI. Your company has 20 years of expertise and established processes. Some leaders want to ignore AI. Others want to pivot entirely to AI. You need a strategy.",
+            question: "What strategic framework handles this best?",
+            hint: "Total transformation and total resistance are both risky.",
+            options: [
+              "Ignore AI — our expertise protects us",
+              "Drop everything and pivot to AI",
+              "Adopt the 'ambidextrous organization' approach: exploit your current expertise (it's a moat) while simultaneously exploring how AI enhances it. Create a separate team for AI innovation that's protected from the main business's antibodies. Your 20 years of domain expertise + AI = a combination pure AI companies can't match.",
+              "Wait to see who wins and then copy them"
+            ],
+            correct: 2,
+            explanation: "The ambidextrous organization (O'Reilly & Tushman) simultaneously manages two modes: exploitation (optimizing what works) and exploration (discovering what's next). Your domain expertise is your edge — pure AI companies don't have it. The strategy is AI + expertise, not AI OR expertise. But the exploration team must be structurally separated, or the established business will kill innovation."
+          },
+          {
+            scenario: "Netflix's strategy evolved: DVD mail → streaming → original content → global platform. Each shift was risky and cannibalized their existing business.",
+            question: "What strategic principle enabled Netflix to keep transforming?",
+            hint: "Most companies can't reinvent themselves. What made Netflix different?",
+            options: [
+              "They were just lucky",
+              "They had unlimited money",
+              "Strategic self-disruption: Netflix deliberately cannibalized its own profitable businesses before competitors could. They killed DVD mail when it was profitable because they saw streaming coming. Reed Hastings' principle: 'It's better to cannibalize yourself than let someone else do it.' This requires extreme strategic courage.",
+              "They had no competition"
+            ],
+            correct: 2,
+            explanation: "Self-disruption is the highest form of strategic adaptation. Most companies can't do it because: (1) current profits feel safe, (2) new direction is uncertain, (3) internal politics protect the status quo. Netflix's culture explicitly valued: 'we could be tomorrow's Blockbuster if we don't keep reinventing.' The willingness to kill your own cash cow before it's dying is what separates long-term winners from eventual losers."
+          },
+          {
+            scenario: "You've been executing your life strategy for 5 years. It's 'working' — you're comfortable, making decent money, doing okay. But something feels off. You're not growing.",
+            question: "What strategic concept is at play?",
+            hint: "Success can be the enemy of greatness.",
+            options: [
+              "Everything is fine — comfort means success",
+              "This is the 'local maximum trap.' You've optimized for a peak that feels high but isn't the highest available. To reach a higher peak, you'd need to go DOWN first (leave comfort, take risks, invest in growth), which feels irrational when you're 'doing well.' But staying at a local max means never reaching your potential.",
+              "You should be grateful and stop wanting more",
+              "Change everything immediately"
+            ],
+            correct: 1,
+            explanation: "The local maximum is a profound strategic concept. Imagine hills of different heights. You've climbed the nearest hill. From there, every direction is DOWN. But there's a much taller hill you can only reach by descending first. Most people stay on their local maximum because going down feels like failure. Strategic courage means accepting temporary decline to reach a higher peak. This is why comfort is the enemy of growth."
+          }
+        ]
+      },
+      {
+        name: 'Power Dynamics',
+        difficulty: 'Expert',
+        xp: 45,
+        questions: [
+          {
+            scenario: "You're a new manager. Your team respects you but one senior team member subtly undermines you in meetings — not enough to call out directly, but enough to erode your authority.",
+            question: "What's the strategically wisest response?",
+            hint: "Power struggles have an audience. How you respond defines you.",
+            options: [
+              "Publicly confront them in the next meeting",
+              "Ignore it — it'll go away",
+              "Private, direct conversation: acknowledge their experience and value, clearly state you've noticed the pattern, express that you want collaboration not competition, and ask what they need. If behavior continues, escalate through formal channels. Never let power challenges go unaddressed, but handle them with dignity.",
+              "Go to HR immediately"
+            ],
+            correct: 2,
+            explanation: "Strategic power management follows a graduated response: (1) Private conversation — gives them face-saving way to change. (2) Clear expectations — removes plausible deniability. (3) Formal escalation — if needed. The key: be firm but dignified. Public confrontation creates enemies. Ignoring it signals weakness. A private, direct, respectful conversation is the power move that demonstrates exactly the leadership qualities you want to project."
+          },
+          {
+            scenario: "You realize your organization has a 'shadow power structure' — the real decisions are made in informal conversations, not in official meetings.",
+            question: "How should a strategist navigate this?",
+            hint: "Every organization has two structures: formal and informal.",
+            options: [
+              "Ignore the shadow structure — formal processes are what matter",
+              "Complain about how unfair it is",
+              "Map the informal network: Who influences whom? Where do pre-decisions happen? Build genuine relationships with key connectors and influencers. Don't try to dismantle the shadow structure — work within it while also strengthening formal processes.",
+              "Expose the shadow structure publicly"
+            ],
+            correct: 2,
+            explanation: "Organizational politics isn't dirty — it's reality. Every organization of 10+ people has informal power structures. Strategic actors map these networks: who's the real decision-maker (often not the highest title), who connects different groups (brokers have disproportionate influence), where do opinions form before meetings. Working with this reality, not against it, is a fundamental strategic skill."
+          },
+          {
+            scenario: "Robert Greene (48 Laws of Power) says 'the best move is the one your opponent doesn't see coming.' Machiavelli advocates strategic cunning. Gandhi advocated transparent moral authority.",
+            question: "Which power strategy is most effective LONG-TERM?",
+            hint: "Short games and long games have different optimal strategies.",
+            options: [
+              "Always Machiavellian — power is about winning",
+              "Always Gandhian — morality always wins",
+              "Context-dependent but principle-driven: build power through genuine competence and relationships (long-term strongest). Use strategic timing and framing (smart, not manipulative). Maintain ethical lines that protect your reputation. The most powerful position combines moral authority + strategic intelligence + genuine capability.",
+              "Power doesn't matter — just be nice"
+            ],
+            correct: 2,
+            explanation: "The most durable power comes from the combination of competence (people need you), relationships (people trust you), and principled behavior (people respect you). Pure Machiavellianism works short-term but creates enemies. Pure idealism gets exploited. The strategic synthesis: be genuinely helpful, strategically smart, and principled. People who are both trusted AND capable have the most sustainable power."
+          }
+        ]
+      },
+      {
+        name: 'Anti-Fragility & Resilience',
+        difficulty: 'Expert',
+        xp: 50,
+        questions: [
+          {
+            scenario: "Nassim Taleb distinguishes between fragile (breaks under stress), robust (survives stress), and anti-fragile (gets STRONGER from stress). Your immune system is anti-fragile — exposure to germs strengthens it.",
+            question: "How do you make your career anti-fragile?",
+            hint: "What career structure gets stronger from chaos and uncertainty?",
+            options: [
+              "Get the most stable, unchanging job possible (fragile to disruption)",
+              "Build multiple income streams, continuously learn new skills, maintain a strong network, keep expenses low, and actively seek challenges. Each disruption makes you MORE adaptable, MORE skilled, and MORE connected. Structured like a barbell: stable base + high-upside experiments.",
+              "Don't plan — just react to whatever happens",
+              "Change careers every 6 months"
+            ],
+            correct: 1,
+            explanation: "Taleb's barbell strategy: combine extremely safe base (emergency fund, stable skill set, strong network) with small, high-upside bets (side projects, new skills, calculated risks). This structure benefits from volatility — each disruption activates your adaptability and creates opportunities. The fragile career has one income stream, one skill set, one employer. The anti-fragile career has many."
+          },
+          {
+            scenario: "A company had a massive data breach. Their stock initially dropped 30%. Six months later, they implemented industry-leading security and became the most trusted brand in their sector. Stock rose 50%.",
+            question: "How did this crisis become an advantage?",
+            hint: "Post-traumatic growth exists for organizations too.",
+            options: [
+              "They got lucky — crises are always bad",
+              "They practiced strategic anti-fragility: used the crisis as forcing function for transformation, over-invested in the weakness (security), turned a liability into a strength (most trusted), and controlled the narrative (transparency + action = trust). The crisis created urgency that normal times couldn't.",
+              "They covered up the breach",
+              "They bribed the media"
+            ],
+            correct: 1,
+            explanation: "Anti-fragile organizations use crises as catalysts for transformation that wasn't possible during comfortable times. The key ingredients: (1) Extreme transparency about the failure, (2) Massive over-investment in fixing it, (3) Turning the former weakness into a competitive advantage, (4) Using the urgency to push through changes that internal politics would normally block. 'Never waste a good crisis' is strategic wisdom."
+          },
+          {
+            scenario: "You build your entire business on a platform (Instagram, Amazon, YouTube). The platform changes its algorithm and your revenue drops 80% overnight.",
+            question: "What anti-fragile principle did you violate?",
+            hint: "Dependence on any single point creates fragility.",
+            options: [
+              "You didn't post enough content",
+              "You didn't violate any principle — platforms always change",
+              "You built on rented land without owning your customer relationship. Anti-fragile strategy: own your audience (email list, direct relationships), diversify platforms, build direct revenue streams, and treat platforms as channels, not foundations. Never build your house on someone else's land.",
+              "You should never use platforms"
+            ],
+            correct: 2,
+            explanation: "Platform dependency is one of the most common strategic fragilities. The anti-fragile approach: use platforms for discovery but own the relationship (email list, community, direct sales). Diversify across platforms so no single one can destroy you. Build assets you control. This applies broadly: single employer dependency, single client dependency, single skill dependency — all create fragility."
+          }
+        ]
+      },
+      {
+        name: 'Second-Order Thinking',
+        difficulty: 'Expert',
+        xp: 50,
+        questions: [
+          {
+            scenario: "A city bans plastic bags to help the environment. First-order effect: less plastic waste. But what happens next?",
+            question: "What second-order effects might occur?",
+            hint: "Every action has consequences, and those consequences have consequences.",
+            options: [
+              "Problem solved — no more plastic waste",
+              "Nothing else happens",
+              "Paper bag production increases (more trees cut, more water used, more energy consumed). Reusable bags require 100+ uses to offset their carbon cost. People who reused plastic bags for trash now buy dedicated trash bags. The NET environmental impact might be neutral or even negative without considering these cascading effects.",
+              "Everyone becomes environmentally conscious"
+            ],
+            correct: 2,
+            explanation: "Second-order thinking asks: 'And then what?' First-order thinkers see the immediate effect and stop. Second-order thinkers trace the cascade. This doesn't mean don't ban plastic bags — it means design policies that account for behavioral substitution, material alternatives, and system-wide effects. Howard Marks: 'First-order thinkers look for simple, easy answers. Second-order thinkers know that things are more complex.'"
+          },
+          {
+            scenario: "A company gives everyone a 20% raise to improve morale and retention. First-order effect: employees are happy.",
+            question: "What second-order effects should leadership anticipate?",
+            hint: "Money is relative, not absolute.",
+            options: [
+              "Everyone stays forever — problem solved",
+              "No additional effects",
+              "Expectations reset permanently (next year without a raise feels like a cut). Competitors may need to match raises, starting an industry-wide wage spiral. Profits decrease, potentially leading to layoffs or hiring freezes. Those hired after the raise may feel it's 'normal' and not special. The hedonic treadmill erases the happiness boost within months.",
+              "Productivity doubles immediately"
+            ],
+            correct: 2,
+            explanation: "Second-order effects of compensation: (1) Hedonic adaptation — the raise feels normal within 3-6 months. (2) Expectation anchoring — future raises below 20% feel like disappointment. (3) Budget pressure — may lead to freezes or cuts elsewhere. (4) Cultural signal — may attract mercenary rather than mission-driven employees. Better morale investments: autonomy, meaningful work, growth opportunities — these have compounding, not diminishing, returns."
+          },
+          {
+            scenario: "You decide to work 80 hours/week to get promoted faster. First-order: more output, faster promotion likely.",
+            question: "What second and third-order effects should you consider?",
+            hint: "Every system has feedback loops, including your body and relationships.",
+            options: [
+              "More work always equals more success",
+              "You might burn out but it's worth it",
+              "Health deteriorates → cognitive decline → quality drops → mistakes increase → reputation suffers. Relationships erode → support system weakens → stress increases → decision-making worsens. You signal to leadership that 80 hours is your baseline, so it becomes expected, not rewarded. Promotion may come but at unsustainable cost.",
+              "No negative effects if you're passionate"
+            ],
+            correct: 2,
+            explanation: "This chain of second and third-order effects shows why 'just work harder' fails strategically. The reinforcing negative loops (stress → poor decisions → more stress) accelerate. Research shows cognitive performance drops sharply after 50 hours/week. Strategic approach: work 50 focused hours, invest remaining time in health, relationships, and skill development. This produces better long-term outcomes than brute-force hours."
+          }
+        ]
+      },
+      {
+        name: 'Strategic Mastery',
+        difficulty: 'Master',
+        xp: 55,
+        questions: [
+          {
+            scenario: "You're advising a country of 50 million people with: rich natural resources, 40% youth unemployment, excellent universities, but corrupt institutions and brain drain (talented people leaving).",
+            question: "Design a strategic framework for transformation:",
+            hint: "Think about leverage points, sequencing, and feedback loops.",
+            options: [
+              "Export more natural resources — they're the main asset",
+              "Focus only on fighting corruption — it's the root cause",
+              "Sequence strategically: (1) Create economic zones with strong governance (bypass corrupt institutions without confronting them directly), (2) Attract diaspora back with targeted incentives, (3) Connect universities to economic zones (stop brain drain by creating local opportunity), (4) Use resource revenue to fund tech/education, not consumption. Each step enables the next.",
+              "Copy Singapore's model exactly"
+            ],
+            correct: 2,
+            explanation: "This demonstrates masterful strategic sequencing. Key principles: (1) Work WITH constraints rather than trying to eliminate them first. (2) Create positive feedback loops (zones attract talent → talent creates jobs → jobs reduce brain drain). (3) Use existing strengths (universities, resources) as foundations. (4) Bypass, don't confront, obstacles you can't yet overcome. (5) Each phase creates conditions for the next. This is how Singapore, Rwanda, and Estonia actually transformed — not by fixing everything at once, but by strategic sequencing."
+          },
+          {
+            scenario: "Looking at the greatest strategists in history — Sun Tzu, Bismarck, Gandhi, Steve Jobs, Mandela — they seemed to have completely different approaches.",
+            question: "What META-principle unites all great strategists?",
+            hint: "Strip away the context. What do they all share?",
+            options: [
+              "They were all aggressive and dominant",
+              "They were all moral and good",
+              "They all understood the difference between the game they appeared to be playing and the game they were actually playing. They all chose their battles by changing the rules, reframing the context, or shifting the terrain. Great strategy isn't playing better — it's choosing WHICH game to play.",
+              "They all had more resources than opponents"
+            ],
+            correct: 2,
+            explanation: "The deepest strategic insight: the game itself is a variable. Sun Tzu: 'win without fighting.' Gandhi: turned moral authority into political power (changed the game from military to moral). Jobs: competed on design and ecosystem, not specs (changed the game from features to experience). Mandela: turned imprisonment into moral authority (the prison WAS the strategy). Master strategists don't play the game better — they change which game is being played."
+          },
+          {
+            scenario: "You've completed all lessons on Strategy Making. A student asks you: 'If you could only teach ONE strategic principle that applies to everything — business, life, relationships, career — what would it be?'",
+            question: "What is the one principle?",
+            hint: "What enables all strategies to work? What makes the difference between a good strategist and everyone else?",
+            options: [
+              "Always be the strongest",
+              "Know everything before acting",
+              "Clarity of purpose + strategic patience + adaptive execution. Know WHAT you want (clarity). Understand that great outcomes take time (patience). Adjust HOW you get there based on reality, not ego (adaptation). Every great strategy in history combined unwavering purpose with flexible methods.",
+              "Trust no one"
+            ],
+            correct: 2,
+            explanation: "The master principle: Fixed destination, flexible route. Bezos calls this 'stubborn on vision, flexible on details.' Every strategic concept you've learned serves this: risk assessment helps you adapt, game theory helps you navigate, second-order thinking prevents traps, but they all serve the fundamental equation: know where you're going + be patient + stay flexible. You've completed the Strategy Making course. Use these principles wisely. 🎓"
+          }
+        ]
+      },
+      {
+        name: 'Grand Strategist Challenge',
+        difficulty: 'Master',
+        xp: 60,
+        questions: [
+          {
+            scenario: "You must integrate EVERY strategic concept you've learned: competitive analysis, game theory, risk assessment, second-order thinking, communication strategy, and adaptive planning. Scenario: You're CEO of a mid-size company. A tech giant just announced they're entering your market in 6 months.",
+            question: "Design your comprehensive strategic response:",
+            hint: "Use multiple frameworks simultaneously. This is the final test.",
+            options: [
+              "Sell the company immediately",
+              "Pretend it's not happening and continue as normal",
+              "Multi-layer response: (1) Competitive: identify your moats they CAN'T replicate (customer relationships, niche expertise, speed). (2) Game theory: consider partnership/acquisition — sometimes joining beats fighting. (3) Risk: scenario-plan for best/worst/realistic outcomes. (4) Second-order: their entry validates your market (good) and may eliminate smaller competitors (you survive, they don't). (5) Communication: control narrative with customers — emphasize your advantages. (6) Adaptation: accelerate your roadmap, deepen customer lock-in, and explore becoming complementary rather than competitive.",
+              "Compete on price — undercut them"
+            ],
+            correct: 2,
+            explanation: "This response demonstrates strategic mastery by applying multiple frameworks simultaneously: competitive positioning (find uncopiable advantages), game theory (explore all possible relationships including partnership), risk management (scenario planning), second-order thinking (market validation + competitor elimination), strategic communication (narrative control), and adaptive execution (accelerate + pivot options). THIS is what strategic thinking looks like in practice — not one framework, but the integration of many. Congratulations, Grand Strategist. 🏆"
+          },
+          {
+            scenario: "Reflect on your strategic journey. You've learned foundations, frameworks, game theory, adaptation, power dynamics, and second-order thinking.",
+            question: "What is the ULTIMATE strategic advantage that no one can take from you?",
+            hint: "It's not knowledge, money, or connections — though those help.",
+            options: [
+              "Having more resources than everyone else",
+              "Knowing more frameworks than anyone",
+              "The ability to THINK CLEARLY under pressure, learn from every outcome, and adapt faster than circumstances change. Your mind — trained in these frameworks and tempered by practice — is the ultimate strategic asset. Knowledge can be googled. Clear thinking under uncertainty cannot.",
+              "Being the most aggressive competitor"
+            ],
+            correct: 2,
+            explanation: "Your trained mind is your ultimate, unlosable strategic asset. Markets crash, companies fail, technologies change — but a mind that can think clearly, assess situations accurately, make decisions under uncertainty, and adapt to new realities is the one thing that compounds across every domain and every challenge you'll ever face. This is what Luminous exists to build. The journey continues — every real-world decision is now your classroom. 🌟"
+          },
+          {
+            scenario: "Final reflection: Strategy is often taught as competition — how to WIN against others. But the deepest strategic traditions (Eastern philosophy, game theory's cooperative solutions, modern network science) suggest something more profound.",
+            question: "What is the highest level of strategic thinking?",
+            hint: "What strategy creates the most value for the longest time?",
+            options: [
+              "Winning every competition you enter",
+              "Accumulating the most resources and power",
+              "Positive-sum strategy: creating systems where your success enables others' success, which in turn enables more of yours. The best strategies don't just win — they expand what 'winning' means. Build ecosystems, not empires. The strategist who makes the pie bigger outperforms the one fighting for the biggest slice.",
+              "Avoiding all conflict and competition"
+            ],
+            correct: 2,
+            explanation: "The highest strategic insight is that the best long-term strategy is positive-sum: your success creates conditions for others' success, creating virtuous cycles. Apple's App Store made developers rich, which made iPhones more valuable, which attracted more developers. This isn't idealism — it's the most sophisticated strategic analysis. Zero-sum thinking limits you to existing value. Positive-sum thinking creates new value. This is the ultimate lesson of strategy. Thank you for learning with Luminous. Go create value in the world. ✨"
+          }
+        ]
+      }
+    ]
+  }
+];
+
+// ========== STATE ==========
+const DEFAULT_STATE = {
+  xp: 0,
+  lessonsCompleted: 0,
+  totalCorrect: 0,
+  totalAnswered: 0,
+  streak: 0,
+  bestStreak: 0,
+  lastActiveDate: null,
+  todayLessons: 0,
+  todayDate: null,
+  courseProgress: { 0: 0, 1: 0 },
+  completedLevels: { 0: [], 1: [] }
+};
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('luminous_state'));
+    if (s) return { ...DEFAULT_STATE, ...s };
+  } catch(e) {}
+  return { ...DEFAULT_STATE };
+}
+
+function saveState() {
+  localStorage.setItem('luminous_state', JSON.stringify(state));
+}
+
+function resetProgress() {
+  if (confirm('Are you sure you want to reset ALL progress? This cannot be undone.')) {
+    state = { ...DEFAULT_STATE, courseProgress: { 0: 0, 1: 0 }, completedLevels: { 0: [], 1: [] } };
+    saveState();
+    updateUI();
+    showPage('home');
+  }
+}
+
+// ========== DATE HELPERS ==========
+function getToday() { return new Date().toISOString().split('T')[0]; }
+
+function checkStreak() {
+  const today = getToday();
+  if (state.todayDate !== today) {
+    state.todayLessons = 0;
+    state.todayDate = today;
+    // Check streak
+    if (state.lastActiveDate) {
+      const last = new Date(state.lastActiveDate);
+      const now = new Date(today);
+      const diff = (now - last) / (1000 * 60 * 60 * 24);
+      if (diff > 1) state.streak = 0;
+    }
+    saveState();
+  }
+}
+
+function canDoLesson() {
+  checkStreak();
+  return state.todayLessons < 2;
+}
+
+// ========== NAVIGATION ==========
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const navBtn = document.querySelector(`.nav-btn[data-page="${page}"]`);
+  if (navBtn) navBtn.classList.add('active');
+  if (page === 'rank') renderRankPage();
+  if (page === 'settings') renderSettings();
+  if (page === 'home') updateUI();
+}
+
+// ========== RANK CALC ==========
+function getCurrentRank() {
+  let rank = RANKS[0];
+  for (let i = RANKS.length - 1; i >= 0; i--) {
+    if (state.xp >= RANKS[i].xp) { rank = RANKS[i]; break; }
+  }
+  return rank;
+}
+
+function getNextRank() {
+  for (let i = 0; i < RANKS.length; i++) {
+    if (state.xp < RANKS[i].xp) return RANKS[i];
+  }
+  return null;
+}
+
+// ========== UI UPDATE ==========
+function updateUI() {
+  checkStreak();
+  const rank = getCurrentRank();
+  const next = getNextRank();
+
+  document.getElementById('streak-count').textContent = state.streak;
+  document.getElementById('daily-done').textContent = state.todayLessons;
+  document.getElementById('daily-bar').style.width = (state.todayLessons / 2 * 100) + '%';
+  document.getElementById('stat-xp').textContent = state.xp;
+  document.getElementById('stat-lessons').textContent = state.lessonsCompleted;
+  document.getElementById('stat-accuracy').textContent = state.totalAnswered > 0 ? Math.round(state.totalCorrect / state.totalAnswered * 100) + '%' : '0%';
+
+  document.getElementById('rank-name').textContent = rank.name;
+  if (next) {
+    document.getElementById('rank-xp-current').textContent = state.xp;
+    document.getElementById('rank-xp-next').textContent = next.xp;
+    const progress = (state.xp - rank.xp) / (next.xp - rank.xp) * 100;
+    document.getElementById('rank-bar').style.width = Math.min(progress, 100) + '%';
+  } else {
+    document.getElementById('rank-xp-current').textContent = state.xp;
+    document.getElementById('rank-xp-next').textContent = 'MAX';
+    document.getElementById('rank-bar').style.width = '100%';
+  }
+
+  // Course progress
+  for (let c = 0; c < 2; c++) {
+    const total = COURSES[c].levels.length;
+    const done = state.completedLevels[c] ? state.completedLevels[c].length : 0;
+    const prefix = c === 0 ? 'ps' : 'sm';
+    document.getElementById(`${prefix}-prog-text`).textContent = `${done} / ${total} levels`;
+    document.getElementById(`${prefix}-prog-bar`).style.width = (done / total * 100) + '%';
+  }
+}
+
+// ========== COURSE VIEW ==========
+let currentCourse = 0;
+
+function openCourse(idx) {
+  currentCourse = idx;
+  const course = COURSES[idx];
+  document.getElementById('course-title').textContent = course.name;
+  document.getElementById('course-subtitle').textContent = course.desc;
+
+  const list = document.getElementById('levels-list');
+  list.innerHTML = '';
+
+  course.levels.forEach((level, i) => {
+    const completed = state.completedLevels[idx] && state.completedLevels[idx].includes(i);
+    const unlocked = i === 0 || (state.completedLevels[idx] && state.completedLevels[idx].includes(i - 1));
+    const isCurrent = unlocked && !completed;
+
+    const div = document.createElement('div');
+    div.className = `level-item${completed ? ' completed' : ''}${isCurrent ? ' current' : ''}${!unlocked ? ' locked' : ''}`;
+    div.innerHTML = `
+      <div class="level-num">${completed ? '✓' : i + 1}</div>
+      <div class="level-info">
+        <div class="level-name">${level.name}</div>
+        <div class="level-diff">${level.difficulty} · ${level.xp} XP</div>
+      </div>
+      <div class="level-status">${completed ? '✅' : !unlocked ? '🔒' : '→'}</div>
+    `;
+    if (unlocked && !completed) {
+      div.onclick = () => startLesson(idx, i);
+    } else if (completed) {
+      div.onclick = () => startLesson(idx, i);
+    }
+    list.appendChild(div);
+  });
+
+  showPage('course');
+}
+
+// ========== LESSON ENGINE ==========
+let lessonState = { courseIdx: 0, levelIdx: 0, questionIdx: 0, selected: -1, answered: false, correctCount: 0 };
+
+function startLesson(courseIdx, levelIdx) {
+  if (!canDoLesson()) {
+    showDailyLimitModal();
+    return;
+  }
+
+  lessonState = { courseIdx, levelIdx, questionIdx: 0, selected: -1, answered: false, correctCount: 0 };
+  const level = COURSES[courseIdx].levels[levelIdx];
+
+  document.getElementById('lesson-title').textContent = level.name;
+  document.getElementById('lesson-sub').textContent = `${level.difficulty} · ${level.xp} XP`;
+  document.getElementById('lesson-back-btn').onclick = () => openCourse(courseIdx);
+
+  showPage('lesson');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const level = COURSES[lessonState.courseIdx].levels[lessonState.levelIdx];
+  const q = level.questions[lessonState.questionIdx];
+  const total = level.questions.length;
+
+  // Progress dots
+  const progHTML = level.questions.map((_, i) => {
+    let cls = 'lesson-prog-dot';
+    if (i < lessonState.questionIdx) cls += ' done';
+    else if (i === lessonState.questionIdx) cls += ' active';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+  document.getElementById('lesson-progress').innerHTML = progHTML;
+
+  let html = `
+    <div class="lesson-scenario"><p>${q.scenario}</p></div>
+    <div class="lesson-question">${q.question}</div>
+    <div class="lesson-hint">${q.hint}</div>
+    <div class="options">
+      ${q.options.map((opt, i) => `<button class="option-btn" data-idx="${i}" onclick="selectOption(${i})">${opt}</button>`).join('')}
+    </div>
+    <button class="submit-btn check" id="submit-btn" onclick="checkAnswer()" disabled>Check Answer</button>
+    <div id="feedback-area"></div>
+  `;
+  document.getElementById('lesson-content').innerHTML = html;
+  lessonState.selected = -1;
+  lessonState.answered = false;
+}
+
+function selectOption(idx) {
+  if (lessonState.answered) return;
+  lessonState.selected = idx;
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector(`.option-btn[data-idx="${idx}"]`).classList.add('selected');
+  document.getElementById('submit-btn').disabled = false;
+}
+
+function checkAnswer() {
+  if (lessonState.answered || lessonState.selected === -1) return;
+  lessonState.answered = true;
+
+  const level = COURSES[lessonState.courseIdx].levels[lessonState.levelIdx];
+  const q = level.questions[lessonState.questionIdx];
+  const correct = lessonState.selected === q.correct;
+
+  if (correct) lessonState.correctCount++;
+
+  state.totalAnswered++;
+  if (correct) state.totalCorrect++;
+  saveState();
+
+  document.querySelectorAll('.option-btn').forEach(b => {
+    b.disabled = true;
+    const idx = parseInt(b.dataset.idx);
+    if (idx === q.correct) b.classList.add('correct');
+    else if (idx === lessonState.selected && !correct) b.classList.add('wrong');
+  });
+
+  const feedbackHTML = `<div class="feedback ${correct ? 'correct' : 'wrong'}">
+    ${correct ? '✅ Correct!' : '❌ Not quite.'} ${q.explanation}
+  </div>`;
+  document.getElementById('feedback-area').innerHTML = feedbackHTML;
+
+  const isLast = lessonState.questionIdx >= level.questions.length - 1;
+  const btn = document.getElementById('submit-btn');
+  btn.className = 'submit-btn next';
+  btn.textContent = isLast ? 'Complete Lesson' : 'Next Question';
+  btn.disabled = false;
+  btn.onclick = isLast ? completeLesson : nextQuestion;
+}
+
+function nextQuestion() {
+  lessonState.questionIdx++;
+  renderQuestion();
+}
+
+function completeLesson() {
+  const level = COURSES[lessonState.courseIdx].levels[lessonState.levelIdx];
+  const total = level.questions.length;
+  const accuracy = lessonState.correctCount / total;
+  const xpEarned = Math.round(level.xp * (0.5 + accuracy * 0.5)); // 50-100% XP based on accuracy
+
+  // Update state
+  if (!state.completedLevels[lessonState.courseIdx]) state.completedLevels[lessonState.courseIdx] = [];
+  if (!state.completedLevels[lessonState.courseIdx].includes(lessonState.levelIdx)) {
+    state.completedLevels[lessonState.courseIdx].push(lessonState.levelIdx);
+  }
+
+  state.xp += xpEarned;
+  state.lessonsCompleted++;
+  state.todayLessons++;
+  state.lastActiveDate = getToday();
+  state.streak = (state.streak || 0) + (state.todayLessons === 1 ? 1 : 0);
+  if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+  saveState();
+
+  // Show XP animation
+  showXPPopup(xpEarned);
+
+  // Show completion screen
+  const content = document.getElementById('lesson-content');
+  content.innerHTML = `
+    <div style="text-align:center;padding:40px 0;">
+      <div style="font-size:64px;margin-bottom:16px;">🎉</div>
+      <h2 style="font-size:28px;font-weight:900;margin-bottom:8px;">Lesson Complete!</h2>
+      <p style="color:var(--gray2);font-size:16px;margin-bottom:32px;">${level.name}</p>
+      <div style="display:flex;justify-content:center;gap:24px;margin-bottom:32px;">
+        <div><div style="font-size:32px;font-weight:900;color:var(--accent);">+${xpEarned}</div><div style="font-size:12px;color:var(--gray3);font-weight:600;">XP EARNED</div></div>
+        <div><div style="font-size:32px;font-weight:900;">${lessonState.correctCount}/${total}</div><div style="font-size:12px;color:var(--gray3);font-weight:600;">CORRECT</div></div>
+        <div><div style="font-size:32px;font-weight:900;">${Math.round(accuracy*100)}%</div><div style="font-size:12px;color:var(--gray3);font-weight:600;">ACCURACY</div></div>
+      </div>
+      <button class="submit-btn next" onclick="openCourse(${lessonState.courseIdx})" style="max-width:300px;margin:0 auto;">Continue</button>
+    </div>
+  `;
+  document.getElementById('lesson-progress').innerHTML = COURSES[lessonState.courseIdx].levels[lessonState.levelIdx].questions.map(() => '<div class="lesson-prog-dot done"></div>').join('');
+}
+
+function showXPPopup(xp) {
+  const popup = document.getElementById('xp-popup');
+  popup.innerHTML = `<span>+${xp} XP</span>`;
+  setTimeout(() => popup.innerHTML = '', 1500);
+}
+
+function showDailyLimitModal() {
+  const container = document.getElementById('modal-container');
+  container.innerHTML = `
+    <div class="modal-overlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div style="font-size:48px;margin-bottom:12px;">⏰</div>
+        <h3>Daily Limit Reached</h3>
+        <p>You've completed your 2 lessons for today. Quality over quantity — let today's lessons sink in and come back tomorrow!</p>
+        <button class="modal-btn" onclick="closeModal()">Got it</button>
+      </div>
+    </div>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('modal-container').innerHTML = '';
+}
+
+// ========== RANK PAGE ==========
+function renderRankPage() {
+  const rank = getCurrentRank();
+  document.getElementById('big-rank-icon').textContent = rank.icon;
+  document.getElementById('big-rank-name').textContent = rank.name;
+  document.getElementById('big-rank-xp').textContent = state.xp;
+
+  const ladder = document.getElementById('ranks-ladder');
+  ladder.innerHTML = RANKS.map(r => {
+    const isCurrent = r.name === rank.name;
+    const achieved = state.xp >= r.xp;
+    return `<div class="rank-row${isCurrent ? ' current' : ''}" style="${!achieved ? 'opacity:0.4' : ''}">
+      <div class="rank-row-icon">${r.icon}</div>
+      <div class="rank-row-info">
+        <div class="rank-row-name">${r.name}</div>
+        <div class="rank-row-req">${r.xp} XP required</div>
+      </div>
+      ${isCurrent ? '<span style="color:var(--accent);font-weight:700;font-size:12px;">CURRENT</span>' : achieved ? '<span style="color:var(--gray3);font-size:16px;">✓</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// ========== SETTINGS ==========
+function renderSettings() {
+  document.getElementById('set-xp').textContent = state.xp;
+  document.getElementById('set-lessons').textContent = state.lessonsCompleted;
+  document.getElementById('set-streak').textContent = state.streak + ' days';
+  document.getElementById('set-best-streak').textContent = state.bestStreak + ' days';
+}
+
+// ========== 3D HEXAGON ==========
+(function initHex() {
+  const canvas = document.getElementById('hex-canvas');
+  const ctx = canvas.getContext('2d');
+  let w, h, mx = 0, my = 0;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  document.addEventListener('touchmove', e => {
+    if (e.touches.length) { mx = e.touches[0].clientX; my = e.touches[0].clientY; }
+  });
+
+  function drawHex(cx, cy, r, rotX, rotY, color, alpha) {
+    const points = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 2;
+      let x = Math.cos(angle) * r;
+      let y = Math.sin(angle) * r;
+
+      // Apply 3D rotation
+      const cosY = Math.cos(rotY);
+      const sinY = Math.sin(rotY);
+      const cosX = Math.cos(rotX);
+      const sinX = Math.sin(rotX);
+
+      const x1 = x * cosY;
+      const z1 = x * sinY;
+      const y1 = y * cosX - z1 * sinX;
+
+      // Perspective
+      const perspective = 600;
+      const z2 = z1 * cosX + y * sinX;
+      const scale = perspective / (perspective + z2);
+
+      points.push({ x: cx + x1 * scale, y: cy + y1 * scale });
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.closePath();
+
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(168, 230, 163, 0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = alpha * 1.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, w, h);
+
+    // Calculate rotation based on mouse
+    const cx = w * 0.85;
+    const cy = h * 0.3;
+    const dx = (mx - cx) / w;
+    const dy = (my - cy) / h;
+    const rotY = dx * 0.8;
+    const rotX = dy * 0.6;
+    const t = Date.now() * 0.001;
+
+    // Draw multiple layered hexagons for 3D effect
+    // Back face (darker)
+    drawHex(cx, cy, 80, rotX + 0.1, rotY + 0.1, 'rgba(100, 180, 100, 0.03)', 0.5);
+    // Side faces hints
+    drawHex(cx + 3, cy + 3, 82, rotX, rotY, 'rgba(120, 200, 120, 0.02)', 0.3);
+    // Main face
+    drawHex(cx, cy, 80, rotX, rotY, 'rgba(168, 230, 163, 0.04)', 0.8);
+    // Inner hex
+    drawHex(cx, cy, 50, rotX * 1.2, rotY * 1.2, 'rgba(168, 230, 163, 0.03)', 0.6);
+    // Innermost
+    drawHex(cx, cy, 25, rotX * 1.5 + Math.sin(t) * 0.05, rotY * 1.5 + Math.cos(t) * 0.05, 'rgba(168, 230, 163, 0.05)', 0.7);
+
+    // Floating small hexagons
+    for (let i = 0; i < 4; i++) {
+      const ox = Math.sin(t * 0.5 + i * 1.5) * 120;
+      const oy = Math.cos(t * 0.3 + i * 2) * 80;
+      drawHex(cx + ox, cy + oy, 12 + i * 3, rotX * 0.5, rotY * 0.5, 'rgba(168, 230, 163, 0.03)', 0.3 + Math.sin(t + i) * 0.15);
+    }
+
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+// ========== INIT ==========
+checkStreak();
+updateUI();
+</script>
+</body>
+</html>
